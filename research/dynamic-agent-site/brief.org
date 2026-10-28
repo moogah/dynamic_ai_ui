@@ -1,6 +1,8 @@
 #+TITLE: Research: a dynamic, agent-driven website
 #+OPTIONS: ^:{} -:nil
-#+STATUS: handing-off 2026-10-28
+#+STATUS: done 2026-10-28
+
+Handed off 2026-10-28 as one change, =first-agent-site=: intent [[file:../../docs/changes/first-agent-site/intent.org]] (approved 2026-10-28), specs =page-spec=, =agent-loop=, =data-fetch= under [[file:../../docs/specs/]], glossary [[file:../../docs/glossary.org]]. Branch =claude/serene-cray-9i2xqb= (the repository has no main yet); base commit 83dc8ab. It is the only change, so there is no sequence. Hand-off review held 2026-10-28: intent approved, four spec defaults approved, terms skeleton, turn and allowlist agreed, no critical item open; the three open questions in the intent (first data sources, adopting json-render, loop placement) are not critical and go to the design round's sitting.
 
 Explores a website that ships as a bare skeleton plus a chat with an AI assistant, where the assistant's tools change the site's structure and content and fetch data from APIs to display. Started 2026-10-28. Evidence in =evidence/=, threads in =threads/=, probes in =probes/=. No code root yet; terms live in this brief.
 
@@ -59,6 +61,7 @@ An experiment (user, 2026-10-28): to learn how well an agent can reshape a page 
 | 2026-10-28 | The agent loop is hand-written (about 30 lines over the Anthropic SDK) behind the owner's small server, not built on the Vercel AI SDK, so its states and mechanics stay visible for learning. |
 | 2026-10-28 | An undo button reverts the assistant's last turn, by keeping a copy of the page spec before each turn. No full version history. |
 | 2026-10-28 | Goals R1-R7 and the non-goals approved as written. |
+| 2026-10-28 | Terms skeleton, turn and allowlist agreed and written into the glossary. |
 | 2026-10-28 | Hand-off review: intent first-agent-site approved, with four spec defaults: the skeleton is a header area plus an empty content area beside the chat; stopping a turn keeps edits already made (undo reverts them); a trimmed fetch result says it was trimmed; the server checks the resolved address and does not follow redirects off the allowlist. |
 
 * Terms
