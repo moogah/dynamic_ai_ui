@@ -62,7 +62,8 @@ All on 2026-10-28, one pass.
 - [O] The SDK *tool runner* (=client.beta.messages.toolRunner= with =betaZodTool= / =betaTool=) does the loop for you and still yields each assistant message before tools run, so approval gates, result rewriting, =max_iterations=, streaming and compaction are available without a hand loop. It is beta. Source: skill.
 - [O] Current models expose no forced tool choice: =tool_choice= =any= / =tool= returns 400 on =claude-opus-5-5= and =claude-sonnet-5-5=; use =auto= plus =strict: true= and a prompt instruction. Thinking cannot be disabled on Opus 5.5 (effort default =medium=). Source: skill.
 - [O] Tool-use overhead is small: 286 system-prompt tokens on Opus 5.5 / Sonnet 5.5 / Haiku 5.5, plus the tool definitions. Source: tool use overview.
-- [I] Cancellation: the TS SDK stream can be aborted; an aborted turn leaves the transcript with a partial assistant message, so the safe rule is to discard the partial turn (or keep only completed text) and never leave a =tool_use= without a matching =tool_result= in history.
+- [O] Cancellation mechanics: =stream.abort()= (or =break= from =for await=) aborts the stream and any in-flight request; =BetaToolRunner= takes an =AbortSignal= and passes it to both API calls and each tool's =run= via its context. A tool that has already started runs to the end even if the turn is cut short, and the model then never sees its result and may call it again, so defer calls that are unsafe to run twice. Source: =anthropic-sdk-typescript= =helpers.md= (revision: was [I] "the stream can be aborted").
+- [I] Transcript after cancel: an aborted turn leaves the transcript with a partial assistant message, so the safe rule is to discard the partial turn (or keep only completed text) and never leave a =tool_use= without a matching =tool_result= in history.
 
 States the UI can show (R3):
 
