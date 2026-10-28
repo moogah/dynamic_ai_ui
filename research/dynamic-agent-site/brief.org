@@ -29,10 +29,11 @@ An experiment (user, 2026-10-28): to learn how well an agent can reshape a page 
 - *R2. The assistant fetches data and chooses how to show it.* Asked for e.g. "the weather for my city as a chart", it calls an API on the owner's allowlist, reads the result and renders a display the visitor can then refine in conversation. Adding a source means adding a host (and secret) to the list, not writing code.
 - *R3. A core agent loop.* Chat in, model call, tool calls executed, results fed back, until the model stops; with explicit states the UI can show.
 - *R5. Visitors need nothing but a browser.* The site owner's small server supplies the Claude key and the data-API secrets; it stores no page or conversation.
-- *R4. Simplest stack that does the job.* The page is drawn from the page spec by a fixed component catalogue; React is the default renderer, with Preact, Lit and server-rendered HTMX/Datastar weighed against it.
+- *R4. Simplest stack that does the job, renderer swappable.* One build: React (or Preact) draws the page spec through a fixed component catalogue. The page spec and the tools do not depend on the renderer, so a second renderer could be added without changing them.
 
 * Non-goals
 
+- Building on two stacks to compare them in this experiment (2026-10-28).
 - A fixed acceptance suite of scripted conversations (2026-10-28: judged by open-ended play).
 - Product concerns: multi-tenant use, cost controls and abuse protection for public visitors, polish, docs for other site owners (2026-10-28: the purpose is an experiment).
 - Fetching from arbitrary URLs outside the owner's allowlist (2026-10-28).
@@ -49,6 +50,7 @@ An experiment (user, 2026-10-28): to learn how well an agent can reshape a page 
 | 2026-10-28 | Data comes through one generic fetch tool on the server, limited to an owner-maintained allowlist of hosts; the server injects per-host secrets and trims large responses. Dedicated per-source tools may be added later. |
 | 2026-10-28 | The purpose is an experiment: learn how well an agent reshapes a page and what is hard. Not a product or a personal tool. |
 | 2026-10-28 | "Working" is judged by open-ended play, not a fixed scripted test set. |
+| 2026-10-28 | Build once, on React (or Preact), with the page spec and tools kept separate from the renderer so a second renderer (e.g. HTMX/Datastar) can be added later. Pending the revised E1 cost comparison. |
 
 * Terms
 
