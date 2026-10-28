@@ -19,6 +19,10 @@ I think React can very likely handle the dynamic needs, but I also want to explo
 The assistant will also need to have tools for making API calls to gather data, and it will read that data and decide how to display it based on conversations with the user.
 #+end_quote
 
+* Purpose
+
+An experiment (user, 2026-10-28): to learn how well an agent can reshape a page and which stack suits it. Done when the user has seen it work and knows what is hard about it; rough edges are acceptable.
+
 * Goals (speculated)
 
 - *R1. The site starts as a skeleton and the assistant reshapes it.* A visitor asks in chat for a section, layout or content change and sees it appear on their page without a reload or a developer; the change lasts for that visit only.
@@ -29,6 +33,7 @@ The assistant will also need to have tools for making API calls to gather data, 
 
 * Non-goals
 
+- Product concerns: multi-tenant use, cost controls and abuse protection for public visitors, polish, docs for other site owners (2026-10-28: the purpose is an experiment).
 - Fetching from arbitrary URLs outside the owner's allowlist (2026-10-28).
 - Letting the assistant write raw HTML or scripts into the page (2026-10-28: it edits the page spec only).
 - Persisting a visitor's page across reloads, accounts, or a shared site edited for other visitors (2026-10-28: changes are for this visitor only and vanish on reload).
@@ -41,6 +46,7 @@ The assistant will also need to have tools for making API calls to gather data, 
 | 2026-10-28 | The assistant edits the page spec only, over a fixed component catalogue; no raw HTML and no custom-HTML escape hatch for now. |
 | 2026-10-28 | The site owner supplies the Claude API key through a small stateless server, which also makes the data API calls with their secrets. Visitors bring no key. |
 | 2026-10-28 | Data comes through one generic fetch tool on the server, limited to an owner-maintained allowlist of hosts; the server injects per-host secrets and trims large responses. Dedicated per-source tools may be added later. |
+| 2026-10-28 | The purpose is an experiment: learn how well an agent reshapes a page and what is hard. Not a product or a personal tool. |
 
 * Terms
 
