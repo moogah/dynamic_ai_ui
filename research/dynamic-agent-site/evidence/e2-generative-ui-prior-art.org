@@ -1,0 +1,172 @@
+#+TITLE: E2: Prior art for agent-generated UI (generative UI)
+#+OPTIONS: ^:{} -:nil
+
+Evidence for [[file:../brief.org][the brief]]: goals R1, R2 and the open question "What does the assistant manipulate: raw DOM/HTML, or a structured page description rendered by fixed components?".
+
+Tags: [O] observed (read from the cited source); [I] inferred (my reading, or a secondary source I could not check against the primary one).
+
+* Question
+
+What prior art exists for agent-generated or agent-modified UI ("generative UI"), and how does each represent and deliver the UI? For each: what the model emits, whether the component catalogue is fixed or open, how incremental edits work, how tool data binds to UI, the safety model, renderer stacks, maturity and licence, and fit for "an assistant that keeps reshaping one live page".
+
+* Method
+
+One pass on 2026-10-28, web search plus fetches of primary sources where the session network allowed.
+
+- [O] Read primary: GitHub READMEs for =google/A2UI=, =vercel-labs/json-render=, =MCP-UI-Org/mcp-ui=, =modelcontextprotocol/ext-apps=, =ag-ui-protocol/ag-ui=. Raw spec files: A2UI =specification/v0_9/docs/a2ui_protocol.md=; MCP Apps =specification/2026-01-26/apps.mdx=.
+- [O] Search-only (secondary write-ups, docs shown as search snippets): AI SDK generative UI, OpenAI Apps SDK, Thesys C1 / OpenUI, CopilotKit patterns, Claude Artifacts, Imagine with Claude, websim, tldraw make real, Adaptive Cards, Google Gemini dynamic view, v0 / bolt / Lovable.
+- [O] *Could not fetch.* DNS was blocked by the session's network allowlist for a2ui.org, ai-sdk.dev, developers.openai.com, mcpui.dev and docs.thesys.dev. A raw path into the =vercel/ai= repo returned 404. Rows built on those sources rest on search snippets and are marked accordingly.
+
+* Findings
+
+** Comparison
+
+Abbreviations. Emits: what the model outputs. Cat.: component catalogue. Edits: how incremental changes work. Bind: how tool data reaches the UI. Fit: fit for one live page that keeps being reshaped (my judgement, so always [I]).
+
+| System                        | Emits                                 | Cat.                       | Edits                                         | Bind                                  | Safety                       | Renderers                    | Maturity / licence                       | Fit  | Tag |
+|-------------------------------+---------------------------------------+----------------------------+-----------------------------------------------+---------------------------------------+------------------------------+------------------------------+------------------------------------------+------+-----|
+| Google A2UI                   | JSON msgs, flat component list by id  | client catalog; custom ok  | =updateComponents= by id, =updateDataModel=   | JSON Pointer =path= bindings          | data only, no code           | Lit, Angular, React; Flutter | v0.9.1 stable, v1.0 RC; Apache-2.0       | high | O   |
+| Vercel json-render            | JSON spec: =root= + =elements= map    | Zod catalog; 36 shadcn     | streamed patches; patch/merge/diff modes      | =$state=, =$bindState=, =$computed=   | schema-validated data        | React, Vue, Svelte, RN, more | ~18.8k stars; Apache-2.0                 | high | O/I |
+| Thesys OpenUI (Lang)          | compact line DSL                      | registered components      | line-by-line streaming                        | not checked                           | no code exec                 | React, Vue, Svelte           | MIT; 2026                                | high | I   |
+| Thesys C1                     | UI spec via OpenAI-compatible API     | vendor library (Crayon)    | streamed; regenerate                          | via tool calls in API                 | data only                    | React (=genui-sdk=)          | commercial API; Crayon MIT               | med  | I   |
+| AG-UI (CopilotKit)            | event stream (transport)              | n/a; carries others        | =STATE_DELTA= (JSON Patch), snapshots         | shared state, tool-call events        | depends on payload           | many agent frameworks        | ~16.9k stars; MIT                        | med  | O/I |
+| CopilotKit gen-UI             | tool call → component; or spec; or HTML | app-registered          | re-render on tool/state                       | tool args/results → props             | varies by pattern            | React                        | MIT                                      | med  | I   |
+| AI SDK UI (Vercel)            | tool call → prebuilt component        | fixed, app code            | new message part per call                     | =part.output= → props                 | no model code                | React, Vue, Svelte           | stable (v5+); Apache-2.0                 | low  | O   |
+| AI SDK RSC =streamUI=         | tool call → server React node         | fixed, app code            | streamable UI                                 | function output                       | no model code                | React RSC                    | experimental, not recommended            | low  | O   |
+| MCP Apps (SEP-1865)           | tool call → predeclared =ui://= HTML  | open (any HTML), by server | tool-result notifications; app calls tools    | =structuredContent= via postMessage   | sandboxed iframe, strict CSP | any host (Claude, ChatGPT…)  | stable 2026-01-26; Apache-2.0            | low  | O   |
+| MCP-UI                        | HTML / URL / remote-dom resource      | open                       | as MCP Apps                                   | as MCP Apps                           | sandboxed iframe             | React, Web Component         | 5.2k stars; Apache-2.0                   | low  | O   |
+| OpenAI Apps SDK               | tool call → widget HTML               | open, by app               | =toolOutput=, =setWidgetState=                | =structuredContent=                   | iframe, CSP                  | ChatGPT                      | now on MCP Apps keys                     | low  | I   |
+| Claude Artifacts              | whole HTML / React / SVG code         | open                       | rewrite or targeted edit of the file          | none live (static code)               | sandboxed iframe, CSP        | browser                      | GA product                               | med  | I   |
+| Imagine with Claude           | code generated live per interaction   | open                       | regenerates on each click                     | model in loop                         | not documented               | browser                      | 5-day preview, Sep 2025                  | med  | I   |
+| Gemini dynamic view           | coded interactive response            | open                       | per prompt                                    | model                                 | not documented               | Gemini, Search AI Mode       | experiment                               | low  | I   |
+| websim.ai                     | full HTML/CSS/JS page per URL         | open                       | regenerate the page                           | model invents content                 | hosted sandbox               | browser                      | consumer product                         | med  | I   |
+| tldraw make real              | single HTML file from sketch          | open (Tailwind)            | annotate and regenerate                       | none                                  | iframe on canvas             | browser                      | 2023 demo, open source                   | low  | I   |
+| Adaptive Cards (MS)           | JSON card (schema 1.6)                | fixed schema               | replace the card                              | =${expr}= templating                  | data only                    | Teams, Outlook, web, mobile  | mature, MIT                              | med  | I   |
+| v0 / bolt / Lovable (contrast)| full app source code                  | open                       | code edits, rebuild                           | generated fetch code                  | sandbox / container          | React/Next, etc.             | commercial                               | low  | I   |
+
+** Google A2UI
+
+- [O] Declarative JSON "A2UI Response": the agent sends UI intent; the client renders it with its own native components. The README's phrase is "safe like data, but expressive like code". Source: [[https://github.com/google/A2UI][google/A2UI]].
+- [O] There are four server→client messages, each carrying ="version": "v0.9"=:
+  - =createSurface= (=surfaceId=, =catalogId=, optional =theme=, =sendDataModel=)
+  - =updateComponents= (a flat =components= array)
+  - =updateDataModel= (a JSON Pointer =path= plus =value=; upsert, and omitting =value= deletes)
+  - =deleteSurface=
+  Source: [[https://raw.githubusercontent.com/google/A2UI/main/specification/v0_9/docs/a2ui_protocol.md][A2UI v0.9 protocol]].
+- [O] It is an adjacency list. Components are flat; parents list child ids; exactly one component has id =root=. Updates are buffered until =root= arrives. The flat design is chosen because it is "easier for LLMs to generate incrementally".
+- [O] Binding: ={"path": "/abs/pointer"}=, relative paths inside templates, ={"call": ...}= for registered functions, and =formatString= with =${...}=.
+- [O] Client→server: an =action= event (=name=, =surfaceId=, =sourceComponentId=, =context=), plus an =error= message for validation failures. Local =functionCall= actions never leave the client.
+- [O] Catalogs: the client advertises =supportedCatalogIds= and optional =inlineCatalogs=. Custom components come through a registry.
+- [O] The spec does not say whether re-sending an existing id replaces the component or merges into it.
+- [O] Transport is not defined; A2UI can travel over A2A, AG-UI or MCP.
+- [O] Status: "early stage public preview". v0.9.1 is stable, v1.0 is a release candidate, licence Apache-2.0.
+- [O] Renderers: Lit, Angular and React on npm. Flutter (via GenUI SDK) and SwiftUI are not yet published.
+
+** Vercel json-render
+
+- [O] The model emits a flat JSON spec: =root= plus an =elements= map, where each element has =type=, =props= and =children=.
+- [O] The catalog is defined with =defineCatalog= and Zod prop schemas; =catalog.prompt()= generates the system prompt from it.
+- [O] State expressions: =$state=, =$bindState= for forms, =$cond=/=$then=/=$else=, =$template=, =$computed=; elements can also carry =visible= conditions. Actions use =emit=, a built-in =setState=, and a =watch= field.
+- [O] Streaming: =createSpecStreamCompiler= yields partial specs and patches.
+- [O] Renderers: React, Vue, Svelte, Solid, React Native, Remotion, React PDF, React Email, Ink, Satori, R3F, Next.js and TanStack Start. Licence Apache-2.0, about 18.8k stars. Source: [[https://github.com/vercel-labs/json-render][vercel-labs/json-render]].
+- [I] First released January 2026 ([[https://infoq.com/news/2026/03/vercel-json-render][InfoQ]]).
+- [I] v0.14 added edit modes: patch (RFC 6902), merge (RFC 7396) and unified diff. This comes from a third-party skill page and was not checked in the repo.
+
+** Thesys C1 and OpenUI
+
+- [I] C1 is an OpenAI-compatible endpoint (base URL =api.thesys.dev/v1/embed=) that returns a UI spec. The client renders it with =<C1Component>= or =<C1Chat>= from =@thesysai/genui-sdk=, on top of the Crayon design system (MIT). Output streams progressively. The docs could not be fetched; this is from search snippets of [[https://docs.thesys.dev/guides/what-is-thesys-c1][docs.thesys.dev]].
+- [I] Added: OpenUI is Thesys's MIT-licensed open framework. OpenUI Lang is a line-oriented DSL in which each line binds one component, and the model can only use registered components. Thesys claims up to 67% fewer tokens than JSON. Bindings: React, Vue and Svelte. Thesys also reports OUI-1 (Sep 2026), a model fine-tuned to emit OpenUI Lang ([[https://mer.vin/2026/05/openui-lang-mit-generative-ui-that-cuts-llm-output-tokens-versus-json/][mer.vin]], [[https://rits.shanghai.nyu.edu/ai/oui-1-diffusion-model-generative-ui/][NYU RITS]]). Why added: a third point in the format space, a DSL rather than JSON or HTML.
+
+** AG-UI protocol and CopilotKit
+
+- [O] AG-UI is an event-based protocol (about 16 standard event types) between an agent backend and a frontend: state sync, frontend tools, human-in-the-loop. It is MIT-licensed with about 16.9k stars and many framework integrations (LangChain, Mastra, Google ADK, Claude Agent SDK, and others). MCP Apps support is listed. Source: [[https://github.com/ag-ui-protocol/ag-ui][ag-ui-protocol/ag-ui]].
+- [I] The run lifecycle is =RUN_STARTED= … =RUN_FINISHED= or =RUN_ERROR=. State moves as =STATE_SNAPSHOT= or as =STATE_DELTA= carrying RFC 6902 JSON Patch. Transport is SSE or WebSocket ([[https://agentwiki.org/ag_ui_protocol][agentwiki]]).
+- [I] CopilotKit names three generative-UI patterns ([[https://copilotkit.ai/blog/the-developer-s-guide-to-generative-ui-in-2026][CopilotKit guide 2026]]):
+  - static: a tool call renders a prebuilt component (=useFrontendTool= / =useRenderTool=)
+  - declarative: an A2UI or Open-JSON-UI spec
+  - open-ended: MCP Apps HTML
+  Some docs add a fourth, "Open Generative UI" (raw HTML/SVG).
+- [I] AG-UI is a transport and state channel, not a UI format. Its =STATE_DELTA= JSON Patch is a ready mechanism for "page description as shared state".
+
+** Vercel AI SDK generative UI and v0
+
+- [O] AI SDK UI (v5+): a server tool call appears as a message part typed =tool-${toolName}=. The client switches on =part.state= (=input-available=, =output-available=, =output-error=) and renders an app-owned React component from =part.output=. The model chooses which tool to call and what arguments to pass; it never writes the UI itself. Source: search snippets of [[https://ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces][AI SDK docs]] (the page itself was not fetchable).
+- [O] AI SDK RSC =streamUI= streams server React components from tool output. Its docs mark it "experimental" and recommend AI SDK UI instead. Known problems: aborts do not work, components flicker on remount, and there are no multi-step tools ([[https://ai-sdk.dev/docs/ai-sdk-rsc/migrating-to-ui][migrating to UI]], snippet).
+- [I] v0 (renamed v0.app in Jan 2026) generates React + Tailwind + shadcn source code. Generated components install into a codebase via =npx=. It is a code generator, not a runtime UI channel ([[https://resources.rework.com/tools/ai-coding/lovable-vs-bolt-new-vs-v0][rework comparison]]).
+- [I] The UI pattern is chat-scoped: each component sits inside a chat message. It is not one persistent page.
+
+** MCP Apps (SEP-1865) and MCP-UI
+
+- [O] UI is a predeclared =ui://= resource with MIME type =text/html;profile=mcp-app=. A tool links to it through =_meta.ui.resourceUri=.
+- [O] The spec rejects embedding UI in tool results; the resource "MUST exist on the server", so hosts can review it before a tool runs. Per-call data arrives as =ui/notifications/tool-result=. Source: [[https://raw.githubusercontent.com/modelcontextprotocol/ext-apps/main/specification/2026-01-26/apps.mdx][MCP Apps spec 2026-01-26]].
+- [O] Sandbox: the View runs in a sandboxed iframe. Web hosts must use a sandbox proxy on another origin. The default CSP is =default-src 'none'= and =connect-src 'none'=, and nested frames are blocked.
+- [O] The View can call =tools/call=, =resources/read=, =ui/message= and =ui/update-model-context=. Messages are JSON-RPC over postMessage.
+- [O] Status: stable as of 2026-01-26; host support in Claude, ChatGPT, VS Code, Goose and others; Apache-2.0 ([[https://github.com/modelcontextprotocol/ext-apps][ext-apps]]).
+- [O] MCP-UI pioneered the idea and now implements MCP Apps. It offers =AppRenderer= and the legacy =UIResourceRenderer=, which also comes as a Web Component, with resource kinds =rawHtml=, =externalUrl= and =remoteDom=. 5.2k stars, Apache-2.0 ([[https://github.com/MCP-UI-Org/mcp-ui][mcp-ui]]).
+- [I] The model does not author the UI: a developer writes it, and the model only triggers it. That fits "prebuilt widgets in someone else's chat host", not reshaping a site.
+
+** OpenAI Apps SDK
+
+- [I] Widgets are HTML in an iframe, fed by =window.openai.toolOutput= and =setWidgetState=. ChatGPT now implements MCP Apps, and =window.openai= remains a compatibility layer. The MIME type =text/html+skybridge= is replaced by =text/html;profile=mcp-app=, and =toolOutput= maps to =structuredContent= ([[https://docs.skybridge.tech/resources/apps-sdk-and-mcp-apps][Skybridge]], [[https://sunpeak.ai/blogs/migrate-openai-apps-sdk-to-mcp-apps/][sunpeak]]). The OpenAI docs host was blocked.
+
+** Claude Artifacts and Imagine with Claude
+
+- [I] Artifacts: the model writes a whole HTML, React or SVG file. It runs in a sandboxed iframe on =claudeusercontent.com= under a CSP that limits external fetches and storage ([[https://simonwillison.net/tags/content-security-policy/][Willison]], [[https://claude.com/docs/government/security/security-and-data-handling.md][Claude Gov docs]]). Edits are rewrites or targeted string edits of the file. I found no official source for the edit mechanism; this is from general knowledge.
+- [I] Added: Imagine with Claude (Sep 2025, a 5-day research preview) generated the interface live, per interaction, with no fixed codebase. Nothing persisted across refresh, and the UI changed on each click ([[https://datacamp.com/tutorial/imagine-with-claude][DataCamp]]). Why added: the closest prior art to "the assistant keeps reshaping one live page". It shows the raw-generation end of the design space and its instability.
+
+** Google Gemini dynamic view (added)
+
+- [I] Gemini "designs and codes a fully customized interactive response for each prompt", shipped as the dynamic view and visual layout experiments, and in Search AI Mode ([[https://research.google/blog/generative-ui-a-rich-custom-visual-interactive-user-experience-for-any-prompt/][Google Research]]). Why added: Google ships both this open-code approach and A2UI, a declarative one.
+
+** websim.ai
+
+- [I] The model (Claude by default) generates a complete HTML/CSS/JS page for any typed URL or prompt. Navigation generates new pages, and editing means regenerating ([[https://www.tomsguide.com/how-to-use-websim][Tom's Guide]], [[https://rentry.org/websim][rentry]]).
+
+** tldraw make real
+
+- [I] Captures a PNG of a sketch, and a vision model returns one Tailwind HTML file. That file renders in an iframe shape on the canvas. To iterate, the user annotates the preview and regenerates ([[https://tldraw.dev/blog/make-real-the-story-so-far][tldraw blog]], [[https://www.simonwillison.net/2023/Nov/16/tldrawdraw-a-ui][Willison]]).
+
+** Microsoft Adaptive Cards
+
+- [I] A JSON card schema (v1.6; Teams caps at 1.5) with =${expr}= templating that separates the template from its data. Microsoft suggests LLMs to draft card JSON. In Copilot Studio, agent instructions cannot render a card dynamically ([[https://learn.microsoft.com/en-us/microsoft-copilot-studio/guidance/adaptive-cards-overview][MS Learn]], [[https://microsoft.github.io/cat-agent-skills/skills/copilot-studio-adaptive-card-builder][MS agent skills]]).
+- [I] It is the pre-LLM ancestor of A2UI and json-render: a fixed schema, data binding, and host-native renderers.
+
+** LLM site builders (contrast)
+
+- [I] v0, bolt.new and Lovable generate full app source code (React, sometimes with a Supabase backend). The edit loop is: change code, rebuild, preview. That is a developer workflow, not a runtime page the end user reshapes ([[https://addyo.substack.com/p/ai-driven-prototyping-v0-bolt-and][Osmani]]).
+
+* Patterns
+
+- [O] *Three representations, one taxonomy.* CopilotKit names it directly: static (tool call → prebuilt component), declarative (JSON spec over a catalogue) and open-ended (HTML/code in an iframe).
+  - Static: AI SDK UI, CopilotKit static, MCP Apps and the OpenAI Apps SDK (developer-written widgets).
+  - Declarative: A2UI, json-render, OpenUI, C1, Adaptive Cards.
+  - Open-ended: Artifacts, Imagine with Claude, Gemini dynamic view, websim, make real.
+- [O] *The declarative systems converged on the same shape.* A flat map of components keyed by id, a separate data model bound by path, and a catalogue the client owns and advertises to the model. Seen in A2UI and json-render; [I] OpenUI Lang (one named binding per line) is the same idea in a terser syntax.
+- [O/I] *Incremental edits are patches or upserts keyed by id, not regeneration.* A2UI uses =updateComponents= and =updateDataModel=. json-render uses SpecStream patches and [I] JSON Patch, merge and diff modes. AG-UI uses =STATE_DELTA= JSON Patch. The open-ended systems regenerate whole files (websim, make real, Imagine).
+- [O] *Data is kept apart from structure.* Tool results go into a data model or =structuredContent=, and the UI binds to them: A2UI paths, json-render =$state=, MCP Apps tool-result notifications, AI SDK =part.output=, Adaptive Cards templates.
+- [O] *Safety follows representation.* Declarative systems are "data, not code", validated against a catalogue or schema (A2UI, json-render). Open-ended systems rely on a sandboxed iframe plus CSP (MCP Apps, Artifacts, make real).
+- [I] *Layering.* A UI format (A2UI, json-render, HTML) is carried over a transport (AG-UI events, MCP, A2A). These choices are independent.
+- [I] *Almost all prior art is chat-message-scoped.* Each generated UI attaches to one turn. Only websim, Imagine with Claude and the site builders treat a whole page or app as the thing being changed, and those regenerate code.
+
+* Bearing on the design (opinion)
+
+My evaluation, not evidence.
+
+- *Open question "what does the assistant manipulate".* The prior art points to a structured page description: a flat id-keyed component map plus a data model, rendered by a fixed catalogue. It does not point to raw DOM. That is the shape A2UI and json-render converged on independently. It gives R1 cheap incremental edits (upsert by id, JSON Patch) and a simple safety story, and it persists as one JSON document. Persistence matters for the open question on who sees changes.
+- *R2 (fetch data, choose a display).* Keep tool results in a data model and have the model emit only bindings plus a choice of catalogue component (chart, table, card). Every declarative system does this, and it keeps API payloads out of the model's UI output.
+- *Simplest thing that works (R4).* Do not adopt a whole protocol stack at first. Two options:
+  - Take json-render as a library: React, Apache-2.0, a Zod catalogue, and a ready =catalog.prompt()=.
+  - Copy A2UI's four-message shape as our own tool schema (=create_surface=, =update_components=, =update_data=, =delete=) and render it with a small React registry.
+  AG-UI, MCP Apps and A2A solve interoperation between hosts and agents, which we do not need for one site and one assistant.
+- *Escape hatch.* For things the catalogue cannot express, an "HTML block" component rendered in a sandboxed iframe (the Artifacts / MCP Apps model) contains the risk without making raw HTML the main representation.
+- *HTMX (E1).* The declarative spec is renderer-agnostic, so the server could render it to HTML fragments for HTMX just as React renders it client-side. The representation choice comes before the stack choice.
+
+* Leads
+
+- Probe: does re-sending an A2UI component id replace or merge? The spec is silent; check the A2UI React renderer source.
+- Probe: confirm json-render's patch, merge and diff edit modes and the version that added them, from the repo changelog (the claim is third-party). Test whether a model can reliably emit RFC 6902 patches against a 30-element spec.
+- Probe: could a 1-day spike render A2UI v0.9 messages through the =@a2ui= React package without any A2A/AG-UI transport, fed directly from our own tool calls?
+- Thread: token cost and error rate of JSON spec vs OpenUI Lang vs raw HTML for the same edits. Thesys's 67% claim is unverified.
+- Thread: how does the model "see" the current page for the next edit: the full spec in context, a summary, or a read-page tool? None of the sources read covered this.
+- Probe: re-fetch the blocked primary docs (a2ui.org, ai-sdk.dev, developers.openai.com, mcpui.dev, docs.thesys.dev) once the network allowlist permits, to upgrade the [I] rows.
+- Thread: Imagine with Claude showed instability when regenerating per interaction. Is there a write-up of why, and does a declarative layer fix it?

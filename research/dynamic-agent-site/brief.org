@@ -37,7 +37,7 @@ The assistant will also need to have tools for making API calls to gather data, 
 Critical: decides whether there is a server-side page store at all. Options: (a) one user's session only, gone on reload; (b) saved per user; (c) the assistant edits one shared site every visitor sees (a site builder). Not yet asked.
 
 ** What does the assistant manipulate: raw DOM/HTML, or a structured page description rendered by fixed components?
-Critical: decides the stack and the safety story. Waiting on E1, E2.
+Critical: decides the stack and the safety story. E1 favours a JSON page spec over a component catalogue; waiting on E2 before asking.
 
 ** Where does the agent loop run: browser or server?
 Critical for API keys and API-call tools (CORS, secrets). E3 points to a hybrid (browser loop + thin key-holding server); to confirm with the user once E1/E2 return.
@@ -46,6 +46,8 @@ Critical for API keys and API-call tools (CORS, secrets). E3 points to a hybrid 
 
 Descriptive; each line cites its evidence file.
 
+- *What the agent emits matters more than the framework.* A flat JSON page spec over a fixed set of allowed components can be edited one section at a time, is XSS-safe (the model writes no markup) and persists as plain JSON; Vercel json-render and Google A2UI standardise such specs with renderers for React, Lit, Svelte and others (E1).
+- *HTMX-style is viable only with a server-side loop.* Datastar or htmx 4 can play the same role: the server renders fragments and streams them over SSE, with extra JavaScript needed for charts. htmx, Datastar, Lit and Alpine facts rest on search summaries; their sites were blocked by the network policy (E1).
 - *API keys decide where the loop runs, not speed.* The Claude API accepts browser calls only with the =anthropic-dangerous-direct-browser-access= header, which exposes the key to every visitor (secondary source); a hybrid fits: loop and DOM tools in the browser, a thin stateless server adding the key (E3).
 - *The loop itself is small.* About 30 lines: call model, run tool calls, feed results back, stop on end of turn; states idle / calling / running tools / awaiting user (E3).
 - *API-call tools are safer as registered connectors than a generic fetch.* Server-side connectors hold secrets and host allowlists, avoiding CORS and SSRF; a generic =http_fetch= is deferred (E3, opinion). Vercel AI SDK and OpenAI Agents SDK rows rest on search snippets only (E3).
@@ -54,6 +56,6 @@ Descriptive; each line cites its evidence file.
 
 | Id | Question | File | Status |
 |----+----------+------+--------|
-| E1 | How do React, HTMX and other stacks let an agent change a live page? | [[file:evidence/e1-ui-stacks.org]] | running |
+| E1 | How do React, HTMX and other stacks let an agent change a live page? | [[file:evidence/e1-ui-stacks.org]] | done |
 | E2 | What prior art exists for agent-generated / generative UI? | [[file:evidence/e2-generative-ui-prior-art.org]] | running |
 | E3 | How is the agent loop built, where does it run, and how do API-call tools work safely? | [[file:evidence/e3-agent-loop.org]] | done |
