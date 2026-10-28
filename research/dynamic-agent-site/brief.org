@@ -24,6 +24,7 @@ The assistant will also need to have tools for making API calls to gather data, 
 - *R1. The site starts as a skeleton and the assistant reshapes it.* A visitor asks in chat for a section, layout or content change and sees it appear on their page without a reload or a developer; the change lasts for that visit only.
 - *R2. The assistant fetches data and chooses how to show it.* Asked for e.g. "the weather for my city as a chart", it calls an API, reads the result and renders a display the user can then refine in conversation.
 - *R3. A core agent loop.* Chat in, model call, tool calls executed, results fed back, until the model stops; with explicit states the UI can show.
+- *R5. Visitors need nothing but a browser.* The site owner's small server supplies the Claude key and the data-API secrets; it stores no page or conversation.
 - *R4. Simplest stack that does the job.* The page is drawn from the page spec by a fixed component catalogue; React is the default renderer, with Preact, Lit and server-rendered HTMX/Datastar weighed against it.
 
 * Non-goals
@@ -37,6 +38,7 @@ The assistant will also need to have tools for making API calls to gather data, 
 |------------+----------|
 | 2026-10-28 | Changes are seen only by the visitor who made them, and are gone on reload. No server-side page store. |
 | 2026-10-28 | The assistant edits the page spec only, over a fixed component catalogue; no raw HTML and no custom-HTML escape hatch for now. |
+| 2026-10-28 | The site owner supplies the Claude API key through a small stateless server, which also makes the data API calls with their secrets. Visitors bring no key. |
 
 * Terms
 
@@ -56,7 +58,7 @@ Closed 2026-10-28 in * Decided: this visitor only, gone on reload.
 Closed 2026-10-28 in * Decided: the page spec only.
 
 ** Where does the agent loop run: browser or server?
-Critical for API keys and API-call tools (CORS, secrets). E3 points to a hybrid (browser loop + thin key-holding server); to confirm with the user once E1/E2 return.
+Partly closed 2026-10-28 in * Decided: an owner-run server holds the key and makes data calls. Whether the loop itself runs in the browser or on that server is left to the design round unless it changes a goal.
 
 * What the evidence shows so far
 
