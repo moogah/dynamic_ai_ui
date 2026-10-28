@@ -62,6 +62,9 @@ Closed 2026-10-28 in * Decided: the page spec only.
 ** Where does the agent loop run: browser or server?
 Partly closed 2026-10-28 in * Decided: an owner-run server holds the key and makes data calls. Whether the loop itself runs in the browser or on that server is left to the design round unless it changes a goal.
 
+** Which data sources should the first test use?
+Not critical: picks the demo, not the design. Asked 2026-10-28 with the allowlist question; no answer yet.
+
 * What the evidence shows so far
 
 Descriptive; each line cites its evidence file.
@@ -72,10 +75,7 @@ Descriptive; each line cites its evidence file.
 - *HTMX-style is viable only with a server-side loop.* Datastar or htmx 4 can play the same role: the server renders fragments and streams them over SSE, with extra JavaScript needed for charts. htmx, Datastar, Lit and Alpine facts rest on search summaries; their sites were blocked by the network policy (E1).
 - *API keys decide where the loop runs, not speed.* The Claude API accepts browser calls only with the =anthropic-dangerous-direct-browser-access= header, which exposes the key to every visitor (secondary source); a hybrid fits: loop and DOM tools in the browser, a thin stateless server adding the key (E3).
 - *The loop itself is small.* About 30 lines: call model, run tool calls, feed results back, stop on end of turn; states idle / calling / running tools / awaiting user (E3).
-- *API-call tools are safer as registered connectors than a generic fetch.* Server-side connectors hold secrets and host allowlists, avoiding CORS and SSRF; a generic =http_fetch= is deferred (E3, opinion). Vercel AI SDK and OpenAI Agents SDK rows rest on search snippets only (E3).
-
-** Which data sources should the first test use?
-Not critical: picks the demo, not the design. Asked 2026-10-28 with the allowlist question; no answer yet.
+- *API-call tools are safer as registered connectors than a generic fetch.* Server-side connectors hold secrets and host allowlists, avoiding CORS and SSRF; E3's opinion was to defer a generic =http_fetch=; the user chose an allowlisted generic fetch instead (Decided 2026-10-28). Vercel AI SDK and OpenAI Agents SDK rows rest on search snippets only (E3).
 
 * Evidence
 
