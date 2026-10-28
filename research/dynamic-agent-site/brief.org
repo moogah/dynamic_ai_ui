@@ -24,10 +24,11 @@ The assistant will also need to have tools for making API calls to gather data, 
 - *R1. The site starts as a skeleton and the assistant reshapes it.* A visitor asks in chat for a section, layout or content change and sees it appear on their page without a reload or a developer; the change lasts for that visit only.
 - *R2. The assistant fetches data and chooses how to show it.* Asked for e.g. "the weather for my city as a chart", it calls an API, reads the result and renders a display the user can then refine in conversation.
 - *R3. A core agent loop.* Chat in, model call, tool calls executed, results fed back, until the model stops; with explicit states the UI can show.
-- *R4. Simplest stack that does the job.* React is the default candidate; HTMX and other departures are weighed against it.
+- *R4. Simplest stack that does the job.* The page is drawn from the page spec by a fixed component catalogue; React is the default renderer, with Preact, Lit and server-rendered HTMX/Datastar weighed against it.
 
 * Non-goals
 
+- Letting the assistant write raw HTML or scripts into the page (2026-10-28: it edits the page spec only).
 - Persisting a visitor's page across reloads, accounts, or a shared site edited for other visitors (2026-10-28: changes are for this visitor only and vanish on reload).
 
 * Decided
@@ -35,6 +36,7 @@ The assistant will also need to have tools for making API calls to gather data, 
 |       Date | Decision |
 |------------+----------|
 | 2026-10-28 | Changes are seen only by the visitor who made them, and are gone on reload. No server-side page store. |
+| 2026-10-28 | The assistant edits the page spec only, over a fixed component catalogue; no raw HTML and no custom-HTML escape hatch for now. |
 
 * Terms
 
@@ -51,7 +53,7 @@ The assistant will also need to have tools for making API calls to gather data, 
 Closed 2026-10-28 in * Decided: this visitor only, gone on reload.
 
 ** What does the assistant manipulate: raw DOM/HTML, or a structured page description rendered by fixed components?
-Critical: decides the stack and the safety story. E1 and E2 both point to a structured page spec (A2UI / json-render shape) over a fixed component catalogue; the alternative is whole-HTML regeneration in a sandbox. To ask after persistence.
+Closed 2026-10-28 in * Decided: the page spec only.
 
 ** Where does the agent loop run: browser or server?
 Critical for API keys and API-call tools (CORS, secrets). E3 points to a hybrid (browser loop + thin key-holding server); to confirm with the user once E1/E2 return.
