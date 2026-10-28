@@ -1,35 +1,41 @@
-#+TITLE: Spec: agent loop and the owner's server
+#+TITLE: agent-loop
 #+OPTIONS: ^:{} -:nil
 
 * Purpose
-
-A visitor chats with an assistant that changes the page through tools. The loop is hand-written so its states and mechanics stay visible: learning what is hard about it is the point of the experiment (research: [[file:../../research/dynamic-agent-site/brief.org]]).
+A visitor chats with an assistant that changes the page through tools. The loop is hand-written so its states and mechanics stay visible: learning what is hard about it is the point of the experiment.
 
 * Requirements
 
-** One loop, run to completion per visitor message
-On a visitor message the loop calls the model with the conversation, runs each tool call the model makes, returns the results to the model, and repeats until the model ends its turn or an error occurs.
+** Requirement: One loop runs to completion per visitor message
+On a visitor message the loop SHALL call the model with the conversation, run each tool call the model makes, return the results to the model, and repeat until the model ends its turn or an error occurs.
 
-*** Scenario: a turn with tool calls
-- Given the visitor asks "add a heading that says Hello"
-- Then the model calls the page-spec tool, the heading appears, the result goes back to the model, and the model's reply appears in the chat
+*** Scenario: A turn with a tool call
+- *WHEN* the visitor asks "add a heading that says Hello"
+- *THEN* the model calls a page-spec tool and the heading appears
+- *AND* the tool result goes back to the model and its reply appears in the chat
 
-** Visible states
-The loop is always in one named state the page can show: idle, calling the model, running tools, awaiting the visitor, error.
+** Requirement: Visible states
+The loop SHALL always be in one named state the page shows: idle, calling the model, running tools, awaiting the visitor, error.
 
-*** Scenario: the visitor sees progress
-- Given a turn that fetches data
-- Then the chat shows "calling the model" and then "running tools" while the fetch runs, and returns to "awaiting the visitor" when the reply is complete
+*** Scenario: The visitor sees progress
+- *WHEN* a turn fetches data
+- *THEN* the chat shows "calling the model", then "running tools" while the fetch runs
+- *AND* returns to "awaiting the visitor" when the reply is complete
 
-** The visitor can stop a turn
-The visitor can cancel a running turn; the loop stops, and any page-spec edits already applied stay (undo reverts them).
+** Requirement: The visitor can stop a turn
+The visitor SHALL be able to cancel a running turn.
 
-** Visitors need nothing but a browser
-The owner's server supplies the Claude API key; the key never reaches the browser. The server fixes the system prompt and tool list in its own code, and stores no page spec and no conversation between requests.
+*** Scenario: Stopping keeps edits already made
+- *WHEN* the visitor stops a turn after the assistant has added a card
+- *THEN* the loop stops and the card stays
+- *AND* undo removes it
 
-*** Scenario: no key in the browser
-- Given a visitor inspects the page and its network traffic
-- Then no Claude API key appears
+** Requirement: Visitors need nothing but a browser
+The owner's server SHALL supply the Claude API key, which never reaches the browser. The server fixes the system prompt and the tool list in its own code and stores no page spec and no conversation between requests.
 
-** Hand-written, no agent framework
-The loop is written directly over the Anthropic SDK (or raw Messages API), not over an agent framework.
+*** Scenario: No key in the browser
+- *WHEN* a visitor inspects the page and its network traffic
+- *THEN* no Claude API key appears
+
+** Requirement: Hand-written, no agent framework
+The loop SHALL be written directly over the Anthropic SDK or the Messages API, not over an agent framework.

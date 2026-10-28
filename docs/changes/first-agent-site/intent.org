@@ -1,25 +1,26 @@
-#+TITLE: Intent: first agent-driven site
+#+TITLE: first-agent-site
 #+OPTIONS: ^:{} -:nil
-#+APPROVED:
+#+STATUS: speculated
+#+APPROVED: 2026-10-28 by the user, in the research hand-off review
 
 * Why
+The user wants to explore a "dynamic agent driven website": a site that ships as a bare skeleton with a chat assistant whose tools change the site's structure and content, and that fetches API data and decides with the visitor how to display it. This first change builds it as an experiment, to learn how well an agent reshapes a page and what is hard about it.
 
-The user wants to explore a "dynamic agent driven website": a skeleton site with a chat assistant whose tools change the site's structure and content and fetch API data to display. This first change builds it as an experiment, to learn how well an agent reshapes a page and what is hard about it. Research: [[file:../../../research/dynamic-agent-site/brief.org]].
+* Research
+[[file:../../../research/dynamic-agent-site/brief.org][research/dynamic-agent-site/brief.org]]: decisions with dates, assumptions with their origin, evidence E1 (UI stacks), E2 (generative-UI prior art), E3 (agent loop, keys, fetch safety).
 
 * Goals
-
-- *R1.* The site starts as a skeleton and the assistant reshapes it in chat, with no reload; changes last for that visit only.
-- *R2.* The assistant fetches data from allowlisted APIs and chooses how to show it; the visitor refines it in conversation. Adding a source means adding a host to the list, not writing code.
-- *R3.* A hand-written agent loop with visible states: idle, calling the model, running tools, awaiting the visitor, error.
-- *R4.* One build: React (or Preact) draws the page spec through the component catalog, kept separate so a second renderer could be added later.
-- *R5.* Visitors need nothing but a browser: the owner's small server holds the Claude key and data secrets and stores no page or conversation.
-- *R6.* A data-capable component catalog of about ten components (heading, text, image, card, list, row/column, table, chart, key-figure tile, form/button).
-- *R7.* An undo control reverts the assistant's last turn.
+- R1. The site starts as a skeleton and the assistant reshapes it in chat, with no reload; changes last for that visit only.
+- R2. The assistant fetches data from allowlisted APIs and chooses how to show it; the visitor refines it in conversation. Adding a source means adding a host to the list, not writing code.
+- R3. A hand-written agent loop with visible states: idle, calling the model, running tools, awaiting the visitor, error.
+- R4. One build: React (or Preact) draws the page spec through the component catalog, kept separate so a second renderer could be added later.
+- R5. Visitors need nothing but a browser: the owner's small server holds the Claude key and data secrets and stores no page or conversation.
+- R6. A data-capable component catalog of about ten components (heading, text, image, card, list, row/column, table, chart, key-figure tile, form/button).
+- R7. An undo control reverts the assistant's last turn.
 
 Done when the user has played with it open-endedly and knows what is hard about it.
 
 * Non-goals
-
 - Saving a page across reloads, accounts, or a site shared with other visitors.
 - The assistant writing raw HTML or scripts.
 - Fetching from URLs outside the owner's allowlist.
@@ -30,21 +31,27 @@ Done when the user has played with it open-endedly and knows what is hard about 
 - Full version history.
 
 * Capabilities
-
-- [[file:../../specs/page-spec.org][page-spec]]: the page spec, the component catalog, rendering, undo.
-- [[file:../../specs/agent-loop.org][agent-loop]]: the loop, its states, the owner's server.
-- [[file:../../specs/data-fetch.org][data-fetch]]: the allowlisted fetch tool.
+- page-spec: new; the page spec, the component catalog, rendering, undo.
+- agent-loop: new; the loop, its states, the owner's server.
+- data-fetch: new; the allowlisted fetch tool.
 
 * New terms
-
-None beyond the glossary: page spec and component catalog, both agreed 2026-10-28.
+- *page spec*: the structured JSON description of the current page, a list of components with ids plus the data they show; the assistant edits it and the page is drawn from it. Example: "the assistant added a chart to the page spec." Avoid: DOM, layout, schema. (agreed 2026-10-28)
+- *component catalog*: the fixed list of component types the page knows how to draw; the page spec may only use types from it. Example: "add a map component to the catalog so the assistant can show locations." Avoid: widget library, design system, catalogue. (agreed 2026-10-28)
 
 * Open Questions
-
-- *Which data sources does the first test use?* Not critical: picks the demo, not the design. Ask in the design round.
-- *Adopt json-render or define our own page spec in its shape?* Not critical. E2 recommends our own minimal spec in json-render's shape, edited by add-or-replace-by-id, remove and set-data tools.
-- *Does the hand-written loop run in the browser or on the server?* Not critical: either keeps the key on the server and costs the same round trips (E3). The page-spec tools run in the browser either way.
-
-* Research
-
-[[file:../../../research/dynamic-agent-site/brief.org]] (evidence E1-E3, assumptions, failure modes).
+** Which data sources does the first test use?
+Not critical: picks the demo, not the design.
+- A free keyless API (e.g. Open-Meteo weather): nothing to configure; the allowlist's secret injection goes untested.
+- One keyed API alongside it: exercises secret injection from the start.
+Recommendation: one keyless and one keyed API, so every data-fetch requirement is exercised. Affects: data-fetch § Fetch then display.
+** Adopt json-render, or define our own page spec in its shape?
+Not critical.
+- Adopt json-render: ready-made React renderer; its format and versioning are someone else's.
+- Our own minimal spec in json-render's shape, edited by add-or-replace-by-id, remove and set-data tools: a little more to write; fully visible and ours.
+Recommendation: our own minimal spec (E2), matching the experiment's aim of visible mechanics. Affects: page-spec § The page is drawn from the page spec.
+** Does the hand-written loop run in the browser or on the server?
+Not critical: either keeps the key on the server and costs the same round trips (E3); the page-spec tools run in the browser either way.
+- Browser loop behind a thin key-adding proxy: every state visible in one place, in the page.
+- Server loop that hands page-spec tool calls to the browser: the prompt and tool list are enforced server-side only.
+Recommendation: browser loop behind a proxy that fixes the system prompt and tool list. Affects: agent-loop § Visitors need nothing but a browser.

@@ -1,53 +1,54 @@
-#+TITLE: Spec: page spec and rendering
+#+TITLE: page-spec
 #+OPTIONS: ^:{} -:nil
 
 * Purpose
-
-The page a visitor sees is drawn from a page spec the assistant edits, so the assistant can reshape the site through conversation without ever writing HTML or scripts. Part of an experiment to learn how well an agent reshapes a page and what is hard about it (research: [[file:../../research/dynamic-agent-site/brief.org]]).
+The page a visitor sees is drawn from a page spec the assistant edits, so the assistant can reshape the site through conversation without ever writing HTML or scripts. Part of an experiment to learn how well an agent reshapes a page and what is hard about it.
 
 * Requirements
 
-** The page is drawn from the page spec
-The page shows exactly what the page spec describes: a set of components, each with an id and a type from the component catalog, arranged by layout containers, showing data the page spec holds.
+** Requirement: The page is drawn from the page spec
+The page SHALL show exactly what the page spec describes: components, each with an id and a type from the component catalog, arranged by row and column containers, showing data the page spec holds.
 
-*** Scenario: a skeleton on first load
-- Given a visitor opens the site
-- Then they see the skeleton page spec drawn (a header area, an empty content area) and the chat
+*** Scenario: The skeleton on first load
+- *WHEN* a visitor opens the site
+- *THEN* they see the skeleton page spec drawn: a header area and an empty content area
+- *AND* the chat beside it
 
-*** Scenario: an edit appears without a reload
-- Given the assistant adds a card to the page spec during a turn
-- Then the card appears on the page without a reload, and the rest of the page is unchanged
+*** Scenario: An edit appears without a reload
+- *WHEN* the assistant adds a card to the page spec during a turn
+- *THEN* the card appears on the page without a reload
+- *AND* the rest of the page is unchanged
 
-** Only catalog types are drawn
-A component whose type is not in the component catalog, or whose properties fail that type's validation, is rejected and the rejection is returned to the assistant as a tool error; the page does not change.
+** Requirement: Only catalog types are drawn
+A component whose type is not in the component catalog, or whose properties fail that type's validation, SHALL be rejected with a tool error returned to the assistant; the page does not change.
 
-*** Scenario: an unknown type
-- Given the assistant tries to add a component of type =map= and =map= is not in the catalog
-- Then the tool call fails with an error naming the allowed types, and the page is unchanged
+*** Scenario: An unknown type is rejected
+- *WHEN* the assistant adds a component of type =map= and =map= is not in the catalog
+- *THEN* the tool call fails with an error naming the allowed types
+- *AND* the page is unchanged
 
-** The first component catalog
-The catalog contains: heading, text, image, card, list, row container, column container, table, chart (line, bar, pie), key-figure tile, form/button.
+** Requirement: The first component catalog
+The catalog SHALL contain: heading, text, image, card, list, row container, column container, table, chart (line, bar, pie), key-figure tile, form/button.
 
-*** Scenario: data as a chart
-- Given the page spec holds a series fetched from an API
-- When the assistant adds a line chart bound to that series
-- Then a line chart of the series is drawn
+*** Scenario: Data shown as a chart
+- *WHEN* the page spec holds a series fetched from an API
+- *AND* the assistant adds a line chart bound to that series
+- *THEN* a line chart of the series is drawn
 
-** The page spec lasts for the visit only
-The page spec lives in the visitor's browser. A reload returns the skeleton.
+** Requirement: The page spec lasts for the visit only
+The page spec SHALL live in the visitor's browser only.
 
-*** Scenario: reload resets
-- Given a visitor has shaped the page
-- When they reload
-- Then they see the skeleton page spec again
+*** Scenario: A reload returns the skeleton
+- *WHEN* a visitor who has shaped the page reloads it
+- *THEN* they see the skeleton page spec again
 
-** Undo the assistant's last turn
-Before each assistant turn the page keeps a copy of the page spec; an undo control restores it. Only one step back.
+** Requirement: Undo the assistant's last turn
+Before each assistant turn the page SHALL keep a copy of the page spec; an undo control restores it. One step back only.
 
-*** Scenario: undo a bad change
-- Given the assistant's last turn removed a table the visitor wanted
-- When the visitor presses undo
-- Then the page spec, and so the page, is as it was before that turn
+*** Scenario: Undo restores the page before the last turn
+- *WHEN* the assistant's last turn removed a table the visitor wanted
+- *AND* the visitor presses undo
+- *THEN* the page spec, and so the page, is as it was before that turn
 
-** The renderer is swappable
-The page spec and the tools that edit it do not depend on the renderer (React in the first build); a second renderer could draw the same page spec without changing them.
+** Requirement: The renderer is swappable
+The page spec and the tools that edit it SHALL NOT depend on the renderer (React in the first build), so a second renderer could draw the same page spec without changing them.

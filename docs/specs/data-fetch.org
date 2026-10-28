@@ -1,30 +1,39 @@
-#+TITLE: Spec: fetching data
+#+TITLE: data-fetch
 #+OPTIONS: ^:{} -:nil
 
 * Purpose
-
-The assistant gathers data from APIs, reads it, and decides with the visitor how to display it. Adding a source should mean adding a host to a list, not writing code (research: [[file:../../research/dynamic-agent-site/brief.org]]).
+The assistant gathers data from APIs, reads it, and decides with the visitor how to display it. Adding a source means adding a host to a list, not writing code.
 
 * Requirements
 
-** One fetch tool, on the owner's server
-The assistant has one tool to fetch a URL. The server makes the request; the browser never calls the data API directly.
+** Requirement: One fetch tool on the owner's server
+The assistant SHALL have one tool to fetch a URL; the owner's server makes the request and the browser never calls a data API directly.
 
-** Only allowlisted hosts
-The server fetches only from hosts on an owner-maintained allowlist. It checks the resolved address at connection time and does not follow redirects off the list.
+*** Scenario: Fetch then display
+- *WHEN* the weather API is on the allowlist
+- *AND* the visitor asks "show the weather for Lisbon as a chart"
+- *THEN* the assistant fetches the forecast and a chart of it appears on the page
 
-*** Scenario: a host not on the list
-- Given =example.org= is not on the allowlist
-- When the assistant asks to fetch =https://example.org/data=
-- Then the tool returns an error naming the allowed hosts, and no request is made
+** Requirement: Only allowlisted hosts
+The server SHALL fetch only from hosts on an owner-maintained allowlist, SHALL check the resolved address at connection time, and SHALL NOT follow redirects to a host off the list.
 
-** Secrets added by the server
-For an allowlisted host that needs a key, the server adds it to the request; the key never reaches the model or the browser.
+*** Scenario: A host not on the list is refused
+- *WHEN* =example.org= is not on the allowlist
+- *AND* the assistant asks to fetch =https://example.org/data=
+- *THEN* the tool returns an error naming the allowed hosts
+- *AND* no request is made
 
-** Large responses are trimmed
-A response too large for the model's context is trimmed before the model reads it, and the tool result says it was trimmed.
+*** Scenario: A redirect off the list is not followed
+- *WHEN* an allowlisted host answers with a redirect to a host not on the list
+- *THEN* the redirect is not followed and the tool returns an error
 
-*** Scenario: fetch then display
-- Given the weather API is on the allowlist
-- When the visitor asks "show the weather for Lisbon as a chart"
-- Then the assistant fetches the forecast, and a chart of it appears on the page
+** Requirement: Secrets added by the server
+For an allowlisted host that needs a key, the server SHALL add it to the request; the key never reaches the model or the browser.
+
+** Requirement: Large responses are trimmed
+A response too large for the model's context SHALL be trimmed before the model reads it.
+
+*** Scenario: A trimmed result says so
+- *WHEN* a fetched response exceeds the size limit
+- *THEN* the tool result holds the trimmed response
+- *AND* states that it was trimmed and how much was left out

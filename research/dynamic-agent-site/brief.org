@@ -59,8 +59,11 @@ An experiment (user, 2026-10-28): to learn how well an agent can reshape a page 
 | 2026-10-28 | The agent loop is hand-written (about 30 lines over the Anthropic SDK) behind the owner's small server, not built on the Vercel AI SDK, so its states and mechanics stay visible for learning. |
 | 2026-10-28 | An undo button reverts the assistant's last turn, by keeping a copy of the page spec before each turn. No full version history. |
 | 2026-10-28 | Goals R1-R7 and the non-goals approved as written. |
+| 2026-10-28 | Hand-off review: intent first-agent-site approved, with four spec defaults: the skeleton is a header area plus an empty content area beside the chat; stopping a turn keeps edits already made (undo reverts them); a trimmed fetch result says it was trimmed; the server checks the resolved address and does not follow redirects off the allowlist. |
 
 * Terms
+
+Moved to [[file:../../docs/glossary.org]] at the hand-off, 2026-10-28.
 
 - *page spec* (agreed 2026-10-28): the structured JSON description of the current page, a list of components with ids plus the data they show; the assistant edits it and the page is drawn from it. Example: "the assistant added a chart to the page spec." Avoid: DOM, layout, schema.
 
