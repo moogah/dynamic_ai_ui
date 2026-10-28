@@ -74,6 +74,6 @@ Descriptive; each line cites its evidence file.
 
 | Id | Question | File | Status |
 |----+----------+------+--------|
-| E1 | How do React, HTMX and other stacks let an agent change a live page? | [[file:evidence/e1-ui-stacks.org]] | done |
-| E2 | What prior art exists for agent-generated / generative UI? | [[file:evidence/e2-generative-ui-prior-art.org]] | done |
-| E3 | How is the agent loop built, where does it run, and how do API-call tools work safely? | [[file:evidence/e3-agent-loop.org]] | done |
+| E1 | How do React, HTMX and other stacks let an agent change a live page? | [[file:evidence/e1-ui-stacks.org]] | done; revising against primary sources 2026-10-28 |
+| E2 | What prior art exists for agent-generated / generative UI? | [[file:evidence/e2-generative-ui-prior-art.org]] | done; revising against primary sources 2026-10-28 |
+| E3 | How is the agent loop built, where does it run, and how do API-call tools work safely? | [[file:evidence/e3-agent-loop.org]] | done; revising against primary sources 2026-10-28 |
