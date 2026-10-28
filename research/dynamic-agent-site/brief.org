@@ -22,13 +22,14 @@ The assistant will also need to have tools for making API calls to gather data, 
 * Goals (speculated)
 
 - *R1. The site starts as a skeleton and the assistant reshapes it.* A visitor asks in chat for a section, layout or content change and sees it appear on their page without a reload or a developer; the change lasts for that visit only.
-- *R2. The assistant fetches data and chooses how to show it.* Asked for e.g. "the weather for my city as a chart", it calls an API, reads the result and renders a display the user can then refine in conversation.
+- *R2. The assistant fetches data and chooses how to show it.* Asked for e.g. "the weather for my city as a chart", it calls an API on the owner's allowlist, reads the result and renders a display the visitor can then refine in conversation. Adding a source means adding a host (and secret) to the list, not writing code.
 - *R3. A core agent loop.* Chat in, model call, tool calls executed, results fed back, until the model stops; with explicit states the UI can show.
 - *R5. Visitors need nothing but a browser.* The site owner's small server supplies the Claude key and the data-API secrets; it stores no page or conversation.
 - *R4. Simplest stack that does the job.* The page is drawn from the page spec by a fixed component catalogue; React is the default renderer, with Preact, Lit and server-rendered HTMX/Datastar weighed against it.
 
 * Non-goals
 
+- Fetching from arbitrary URLs outside the owner's allowlist (2026-10-28).
 - Letting the assistant write raw HTML or scripts into the page (2026-10-28: it edits the page spec only).
 - Persisting a visitor's page across reloads, accounts, or a shared site edited for other visitors (2026-10-28: changes are for this visitor only and vanish on reload).
 
@@ -39,6 +40,7 @@ The assistant will also need to have tools for making API calls to gather data, 
 | 2026-10-28 | Changes are seen only by the visitor who made them, and are gone on reload. No server-side page store. |
 | 2026-10-28 | The assistant edits the page spec only, over a fixed component catalogue; no raw HTML and no custom-HTML escape hatch for now. |
 | 2026-10-28 | The site owner supplies the Claude API key through a small stateless server, which also makes the data API calls with their secrets. Visitors bring no key. |
+| 2026-10-28 | Data comes through one generic fetch tool on the server, limited to an owner-maintained allowlist of hosts; the server injects per-host secrets and trims large responses. Dedicated per-source tools may be added later. |
 
 * Terms
 
@@ -71,6 +73,9 @@ Descriptive; each line cites its evidence file.
 - *API keys decide where the loop runs, not speed.* The Claude API accepts browser calls only with the =anthropic-dangerous-direct-browser-access= header, which exposes the key to every visitor (secondary source); a hybrid fits: loop and DOM tools in the browser, a thin stateless server adding the key (E3).
 - *The loop itself is small.* About 30 lines: call model, run tool calls, feed results back, stop on end of turn; states idle / calling / running tools / awaiting user (E3).
 - *API-call tools are safer as registered connectors than a generic fetch.* Server-side connectors hold secrets and host allowlists, avoiding CORS and SSRF; a generic =http_fetch= is deferred (E3, opinion). Vercel AI SDK and OpenAI Agents SDK rows rest on search snippets only (E3).
+
+** Which data sources should the first test use?
+Not critical: picks the demo, not the design. Asked 2026-10-28 with the allowlist question; no answer yet.
 
 * Evidence
 
