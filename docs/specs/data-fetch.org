@@ -10,6 +10,9 @@ The assistant gathers data from APIs, reads it, and decides with the visitor how
 The assistant SHALL have one tool to fetch a URL; the owner's server makes the request and the browser never calls a data API directly.
 
 *** Scenario: Fetch then display
+:PROPERTIES:
+:TEST: none: needs a live model and a live API; seam/allowlist-fetch pins the fetch half and seam/page-renderer the chart half
+:END:
 - *WHEN* the weather API is on the allowlist
 - *AND* the visitor asks "show the weather for Lisbon as a chart"
 - *THEN* the assistant fetches the forecast and a chart of it appears on the page
