@@ -15,8 +15,9 @@ All on 2026-10-28, one pass.
 - [O] Read the bundled =claude-api= skill (cached 2026-10-06): =shared/tool-use-concepts.md= (tool runner vs manual loop, eager input streaming, pause_turn, MCP connector, mid-conversation tool changes, context editing), =shared/agent-design.md= (dedicated tools vs bash, context management, caching for agents), =typescript/claude-api/tool-use.md= (tool runner, streaming manual loop), the SKILL index (models, compaction, caching, web fetch tool).
 - [O] Fetched [[https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview][Claude docs: Tool use overview]] (client vs server tools, round trip, tool token overhead).
 - [O] Web searches (result summaries only, not full pages): Anthropic browser CORS header; Vercel AI SDK client-side tools; OpenAI Agents SDK JS human-in-the-loop; LangGraph.js interrupts; agent fetch-tool SSRF / MCP security.
-- *Could not fetch*: =ai-sdk.dev= and =openai.github.io= (outside the session's allowed network domains). AI SDK and OpenAI Agents SDK facts come from search-result snippets and are thinner. No source found for XState-based LLM loops (=statelyai/agent=); that row is inferred.
+- *Could not fetch* (first pass): =ai-sdk.dev= and =openai.github.io= (outside the session's allowed network domains). AI SDK and OpenAI Agents SDK facts came from search-result snippets. No source found for XState-based LLM loops (=statelyai/agent=); that row was inferred. All superseded by the revision below.
 - Nothing was run.
+- *Revision, 2026-10-28 (second pass, network open).* Fetched primary sources with =curl= (the WebFetch tool still failed DNS for =ai-sdk.dev=, =openai.github.io=, =docs.langchain.com=; =curl= through the proxy reached them or their GitHub sources): AI SDK =content/docs/04-ai-sdk-ui/03-chatbot-tool-usage.mdx= and =packages/react/src/use-chat.ts= on =vercel/ai= main (package =ai@7.0.156=); OpenAI Agents JS =docs/.../guides/human-in-the-loop.mdx= and =voice-agents/quickstart.mdx=; LangGraph.js interrupts page (=.md=); XState docs =stately.ai/docs/invoke= and =/docs/promise-actors=; =statelyai/agent= readme and npm metadata; =anthropic-sdk-typescript= =README.md=, =helpers.md=, =src/client.ts=, =src/lib/tools/BetaToolRunner.ts= (main); Claude docs =manage-claude/authentication=, =workload-identity-federation=, =wif-reference=, =app-attest=, =api-and-data-retention=, =cli-sdks-libraries/sdks/typescript=, =release-notes/overview= (via =platform.claude.com/llms-full.txt=); the IETF MCP draft and =webfetch/guard.rs= in full; Willison's post in full. *Ran* one probe: CORS preflight and POSTs (invalid key) to =api.anthropic.com/v1/messages= with an =Origin= header, with and without the browser-access header. Each changed item says what changed. Not reachable: the =VoltAgent/voltagent= issue (GitHub repo access not enabled for this session), so that one citation is still a snippet.
 
 * Findings
 
@@ -25,11 +26,11 @@ All on 2026-10-28, one pass.
 | Option | What you write | Runs in browser? | Client (DOM) tools | Explicit states | Weight | Tag |
 |--------------------------+------------------------------------+------------------------------+-----------------------------------+----------------------------+--------+-----|
 | Manual Messages API loop | ~30 lines while-loop | Yes (CORS opt-in header) | Native: you run every tool | You define them | Tiny | [O] |
-| Anthropic SDK tool runner | Tool fns + Zod/JSON schema | Likely (same TS SDK) | Yes; per-turn hooks | Implicit (iterations) | Small | [O]/[I] |
-| Vercel AI SDK (=useChat=) | Server route + React hook | Model call on server | =onToolCall= + =addToolOutput= | Tool part states in UI msgs | Medium | [O] |
-| OpenAI Agents SDK (JS) | Agents, tools, handoffs | RealtimeAgent: yes | Approvals via =interruptions= | RunState, resumable | Medium | [O] |
+| Anthropic SDK tool runner | Tool fns + Zod/JSON schema | Yes, with =dangerouslyAllowBrowser= (also behind a proxy =baseURL=) | Yes; per-turn hooks, =AbortSignal= | Implicit (iterations) | Small | [O] |
+| Vercel AI SDK (=useChat=) | Server route + React hook | Model call on server | Tools without =execute=; =onToolCall= + =addToolOutput= | Tool part states in UI msgs | Medium | [O] |
+| OpenAI Agents SDK (JS) | Agents, tools, handoffs | RealtimeAgent: yes (ephemeral =ek_= token) | Approvals via =interruptions= | RunState, resumable | Medium | [O] |
 | LangGraph.js | Graph of nodes + checkpointer | Server-oriented | =interrupt()= + =Command= resume | Graph nodes, persisted | Heavy | [O] |
-| XState loop | Statechart around the API call | Yes | Actions/invoked actors | First-class, visualisable | Small-med | [I] |
+| XState loop | Statechart around the API call | Yes | Invoked actors (=fromPromise= gets =signal=) | First-class, visualisable | Small-med | [O]/[I] |
 | Claude Agent SDK | prompt + options | No (Node/Python process) | Via MCP / custom tools | Internal | Heavy | [O] |
 | Managed Agents | Agent config; send tool results | No (Anthropic-hosted) | Custom tools round-trip | Session events (SSE) | Platform | [O] |
 
@@ -37,10 +38,10 @@ All on 2026-10-28, one pass.
 
 | Placement | API key | CORS for data APIs | DOM tool latency | Secrets for APIs | Simplicity | Tag |
 |-----------------------------------+------------------------+--------------------+---------------------+-----------------------+-------------------+-----|
-| Browser-only | Exposed (BYOK only) | Each API must allow | Zero (in-process) | Cannot hide | Simplest | [O]/[I] |
+| Browser-only | Exposed (BYOK only; no web ephemeral token) | Each API must allow | Zero (in-process) | Cannot hide | Simplest | [O]/[I] |
 | Server-only | Hidden | None (server fetch) | N/A: no live DOM | Server env | Simple, no DOM | [I] |
-| Hybrid: server loop, browser tools | Hidden | None for server tools | 1 extra round trip | Server env | Medium | [I] |
-| Thin proxy: browser loop, server relays model + fetch | Hidden | None (proxy fetch) | Zero | Proxy injects | Simple | [I] |
+| Hybrid: server loop, browser tools | Hidden | None for server tools | Zero to run; results ride the next request | Server env | Medium (AI SDK: prepackaged) | [O]/[I] |
+| Thin proxy: browser loop, server relays model + fetch | Hidden | None (proxy fetch) | Zero to run; results ride the next request | Proxy injects | Simple | [I] |
 
 ** Comparison: API-call tool shapes
 
