@@ -1,0 +1,24 @@
+[
+  {
+    "task": null,
+    "cycle": null,
+    "source": "role-default",
+    "reason": "role default",
+    "agent_id": "a93b111d4bcd76061",
+    "role": "phase-design",
+    "model": "sonnet",
+    "effort": "medium",
+    "recorded_at": "2026-10-28T23:33:32Z"
+  },
+  {
+    "task": null,
+    "cycle": null,
+    "source": "role-default",
+    "reason": "role default",
+    "agent_id": "a9956ace1f5500f03",
+    "role": "architect-design",
+    "model": "opus",
+    "effort": "high",
+    "recorded_at": "2026-10-28T23:36:05Z"
+  }
+]
