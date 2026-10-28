@@ -1,0 +1,51 @@
+#+TITLE: Research: a dynamic, agent-driven website
+#+OPTIONS: ^:{} -:nil
+#+STATUS: open
+
+Explores a website that ships as a bare skeleton plus a chat with an AI assistant, where the assistant's tools change the site's structure and content and fetch data from APIs to display. Started 2026-10-28. Evidence in =evidence/=, threads in =threads/=, probes in =probes/=. No code root yet; terms live in this brief.
+
+* Why
+
+User, 2026-10-28:
+
+#+begin_quote
+I want to explore the concept of a 'dynamic agent driven website'. This will be a site that comes with a bare skeleton of structure and the ability to chat with an AI assistant. The assistant will have tools that let it change the structure and content of the site.
+
+Some elements we'll need: the core LLM loop (REPL, state machine, tool calls)
+Tools for interacting with the DOM
+
+I think React can very likely handle the dynamic needs, but I also want to explore other options, including some major departures from the norm like HTMX. Simpler is better, if it can do what we need.
+
+The assistant will also need to have tools for making API calls to gather data, and it will read that data and decide how to display it based on conversations with the user.
+#+end_quote
+
+* Goals (speculated)
+
+- *R1. The site starts as a skeleton and the assistant reshapes it.* A user asks in chat for a section, layout or content change and sees it appear on the page without a reload or a developer.
+- *R2. The assistant fetches data and chooses how to show it.* Asked for e.g. "the weather for my city as a chart", it calls an API, reads the result and renders a display the user can then refine in conversation.
+- *R3. A core agent loop.* Chat in, model call, tool calls executed, results fed back, until the model stops; with explicit states the UI can show.
+- *R4. Simplest stack that does the job.* React is the default candidate; HTMX and other departures are weighed against it.
+
+* Assumptions
+
+- React can handle the dynamic needs. Origin: the user, stated as likely, to be tested against alternatives.
+- "Tools for interacting with the DOM" means the assistant changes the page directly. Origin: the user's words; whether it edits raw DOM or a structured page description is open (below).
+
+* Open Questions
+
+** Who sees the changes, and do they persist?
+Critical: decides whether there is a server-side page store at all. Options: (a) one user's session only, gone on reload; (b) saved per user; (c) the assistant edits one shared site every visitor sees (a site builder). Not yet asked.
+
+** What does the assistant manipulate: raw DOM/HTML, or a structured page description rendered by fixed components?
+Critical: decides the stack and the safety story. Waiting on E1, E2.
+
+** Where does the agent loop run: browser or server?
+Critical for API keys and API-call tools (CORS, secrets). Waiting on E3.
+
+* Evidence
+
+| Id | Question | File | Status |
+|----+----------+------+--------|
+| E1 | How do React, HTMX and other stacks let an agent change a live page? | [[file:evidence/e1-ui-stacks.org]] | running |
+| E2 | What prior art exists for agent-generated / generative UI? | [[file:evidence/e2-generative-ui-prior-art.org]] | running |
+| E3 | How is the agent loop built, where does it run, and how do API-call tools work safely? | [[file:evidence/e3-agent-loop.org]] | running |
