@@ -36,6 +36,10 @@ The assistant will also need to have tools for making API calls to gather data, 
 |------------+----------|
 | 2026-10-28 | Changes are seen only by the visitor who made them, and are gone on reload. No server-side page store. |
 
+* Terms
+
+- *page spec* (agreed 2026-10-28): the structured JSON description of the current page, a list of components with ids plus the data they show; the assistant edits it and the page is drawn from it. Example: "the assistant added a chart to the page spec." Avoid: DOM, layout, schema.
+
 * Assumptions
 
 - React can handle the dynamic needs. Origin: the user, stated as likely, to be tested against alternatives.
