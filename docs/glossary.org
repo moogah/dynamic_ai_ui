@@ -1,0 +1,18 @@
+#+TITLE: Glossary
+#+OPTIONS: ^:{} -:nil
+
+Terms agreed with the user. Use these words; avoid the listed alternatives.
+
+* page spec
+The structured JSON description of the current page: a list of components with ids plus the data they show. The assistant edits it and the page is drawn from it.
+- Example :: "the assistant added a chart to the page spec."
+- Avoid :: DOM, layout, schema.
+- Agreed :: 2026-10-28
+- Specs :: [[file:specs/page-spec.org]]
+
+* component catalog
+The fixed list of component types the page knows how to draw (e.g. chart, table, card); the page spec may only use types from it.
+- Example :: "add a map component to the catalog so the assistant can show locations."
+- Avoid :: widget library, design system; spell it "catalog", not "catalogue".
+- Agreed :: 2026-10-28
+- Specs :: [[file:specs/page-spec.org]]

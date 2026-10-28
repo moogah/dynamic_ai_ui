@@ -1,0 +1,30 @@
+#+TITLE: Spec: fetching data
+#+OPTIONS: ^:{} -:nil
+
+* Purpose
+
+The assistant gathers data from APIs, reads it, and decides with the visitor how to display it. Adding a source should mean adding a host to a list, not writing code (research: [[file:../../research/dynamic-agent-site/brief.org]]).
+
+* Requirements
+
+** One fetch tool, on the owner's server
+The assistant has one tool to fetch a URL. The server makes the request; the browser never calls the data API directly.
+
+** Only allowlisted hosts
+The server fetches only from hosts on an owner-maintained allowlist. It checks the resolved address at connection time and does not follow redirects off the list.
+
+*** Scenario: a host not on the list
+- Given =example.org= is not on the allowlist
+- When the assistant asks to fetch =https://example.org/data=
+- Then the tool returns an error naming the allowed hosts, and no request is made
+
+** Secrets added by the server
+For an allowlisted host that needs a key, the server adds it to the request; the key never reaches the model or the browser.
+
+** Large responses are trimmed
+A response too large for the model's context is trimmed before the model reads it, and the tool result says it was trimmed.
+
+*** Scenario: fetch then display
+- Given the weather API is on the allowlist
+- When the visitor asks "show the weather for Lisbon as a chart"
+- Then the assistant fetches the forecast, and a chart of it appears on the page

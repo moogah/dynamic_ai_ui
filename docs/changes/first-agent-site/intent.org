@@ -1,0 +1,50 @@
+#+TITLE: Intent: first agent-driven site
+#+OPTIONS: ^:{} -:nil
+#+APPROVED:
+
+* Why
+
+The user wants to explore a "dynamic agent driven website": a skeleton site with a chat assistant whose tools change the site's structure and content and fetch API data to display. This first change builds it as an experiment, to learn how well an agent reshapes a page and what is hard about it. Research: [[file:../../../research/dynamic-agent-site/brief.org]].
+
+* Goals
+
+- *R1.* The site starts as a skeleton and the assistant reshapes it in chat, with no reload; changes last for that visit only.
+- *R2.* The assistant fetches data from allowlisted APIs and chooses how to show it; the visitor refines it in conversation. Adding a source means adding a host to the list, not writing code.
+- *R3.* A hand-written agent loop with visible states: idle, calling the model, running tools, awaiting the visitor, error.
+- *R4.* One build: React (or Preact) draws the page spec through the component catalog, kept separate so a second renderer could be added later.
+- *R5.* Visitors need nothing but a browser: the owner's small server holds the Claude key and data secrets and stores no page or conversation.
+- *R6.* A data-capable component catalog of about ten components (heading, text, image, card, list, row/column, table, chart, key-figure tile, form/button).
+- *R7.* An undo control reverts the assistant's last turn.
+
+Done when the user has played with it open-endedly and knows what is hard about it.
+
+* Non-goals
+
+- Saving a page across reloads, accounts, or a site shared with other visitors.
+- The assistant writing raw HTML or scripts.
+- Fetching from URLs outside the owner's allowlist.
+- Product concerns: multi-tenant use, cost and abuse controls, polish, docs for other site owners.
+- A scripted acceptance suite.
+- Building on two stacks.
+- An agent framework for the loop.
+- Full version history.
+
+* Capabilities
+
+- [[file:../../specs/page-spec.org][page-spec]]: the page spec, the component catalog, rendering, undo.
+- [[file:../../specs/agent-loop.org][agent-loop]]: the loop, its states, the owner's server.
+- [[file:../../specs/data-fetch.org][data-fetch]]: the allowlisted fetch tool.
+
+* New terms
+
+None beyond the glossary: page spec and component catalog, both agreed 2026-10-28.
+
+* Open Questions
+
+- *Which data sources does the first test use?* Not critical: picks the demo, not the design. Ask in the design round.
+- *Adopt json-render or define our own page spec in its shape?* Not critical. E2 recommends our own minimal spec in json-render's shape, edited by add-or-replace-by-id, remove and set-data tools.
+- *Does the hand-written loop run in the browser or on the server?* Not critical: either keeps the key on the server and costs the same round trips (E3). The page-spec tools run in the browser either way.
+
+* Research
+
+[[file:../../../research/dynamic-agent-site/brief.org]] (evidence E1-E3, assumptions, failure modes).

@@ -1,6 +1,6 @@
 #+TITLE: Research: a dynamic, agent-driven website
 #+OPTIONS: ^:{} -:nil
-#+STATUS: open
+#+STATUS: handing-off 2026-10-28
 
 Explores a website that ships as a bare skeleton plus a chat with an AI assistant, where the assistant's tools change the site's structure and content and fetch data from APIs to display. Started 2026-10-28. Evidence in =evidence/=, threads in =threads/=, probes in =probes/=. No code root yet; terms live in this brief.
 
@@ -23,7 +23,7 @@ The assistant will also need to have tools for making API calls to gather data, 
 
 An experiment (user, 2026-10-28): to learn how well an agent can reshape a page and which stack suits it. Done when the user has seen it work and knows what is hard about it; rough edges are acceptable. Judged by open-ended play, not a scripted test set.
 
-* Goals (speculated)
+* Goals
 
 - *R1. The site starts as a skeleton and the assistant reshapes it.* A visitor asks in chat for a section, layout or content change and sees it appear on their page without a reload or a developer; the change lasts for that visit only.
 - *R2. The assistant fetches data and chooses how to show it.* Asked for e.g. "the weather for my city as a chart", it calls an API on the owner's allowlist, reads the result and renders a display the visitor can then refine in conversation. Adding a source means adding a host (and secret) to the list, not writing code.
@@ -58,6 +58,7 @@ An experiment (user, 2026-10-28): to learn how well an agent can reshape a page 
 | 2026-10-28 | The first component catalog is data-capable, about 10 components: heading, text, image, card, list, layout container (row/column), table, chart (line/bar/pie), key-figure tile, form/button. More can be added later. |
 | 2026-10-28 | The agent loop is hand-written (about 30 lines over the Anthropic SDK) behind the owner's small server, not built on the Vercel AI SDK, so its states and mechanics stay visible for learning. |
 | 2026-10-28 | An undo button reverts the assistant's last turn, by keeping a copy of the page spec before each turn. No full version history. |
+| 2026-10-28 | Goals R1-R7 and the non-goals approved as written. |
 
 * Terms
 
@@ -67,8 +68,10 @@ An experiment (user, 2026-10-28): to learn how well an agent can reshape a page 
 
 * Assumptions
 
-- React can handle the dynamic needs. Origin: the user, stated as likely, to be tested against alternatives.
-- "Tools for interacting with the DOM" means the assistant changes the page directly. Origin: the user's words; whether it edits raw DOM or a structured page description is open (below).
+- React can handle the dynamic needs. Origin: the user, stated as likely; E1 found every client renderer adequate and small next to the chart library, so it holds.
+- "Tools for interacting with the DOM" means tools that change the page. Origin: the user's words; settled 2026-10-28 as tools that edit the page spec, which the renderer draws, not direct DOM edits.
+- The visitor-facing site is used by the owner and a few people they invite, so cost and abuse controls can wait. Origin: inferred from the purpose (an experiment); not stated by the user.
+- Fetched API responses can be trimmed to fit the model's context without losing what the visitor asked about. Origin: E3; untested, a likely "what's hard".
 
 * Open Questions
 
@@ -100,7 +103,7 @@ Descriptive; each line cites its evidence file.
 - *API keys decide where the model is called from.* Confirmed from primary sources: without the opt-in browser header the API response carries no CORS headers, and with it the key is exposed; as of 2026-10 Anthropic has no browser-safe per-visitor token (App Attest is iOS/macOS only; Workload Identity Federation is for server workloads). A server proxy is required (E3, revised).
 - *Server loop with browser-run tools costs no extra round trip.* Both it and a browser loop behind a thin proxy send tool results in a new model request. Vercel AI SDK client-side tools (no =execute=, =onToolCall=, =addToolOutput=, v7) fit the page spec and per-visitor decisions with a stateless server that pins the system prompt and tools; E3 now weighs a hand-written loop plus proxy and AI SDK =useChat= as equal (E3, revised).
 - *The loop itself is small.* About 30 lines: call model, run tool calls, feed results back, stop on end of turn; states idle / calling / running tools / awaiting user (E3).
-- *API-call tools are safer as registered connectors than a generic fetch.* Server-side connectors hold secrets and host allowlists, avoiding CORS and SSRF; E3's opinion was to defer a generic =http_fetch=; the user chose an allowlisted generic fetch instead (Decided 2026-10-28). Vercel AI SDK and OpenAI Agents SDK rows rest on search snippets only (E3).
+- *API-call tools are safer as registered connectors than a generic fetch.* Calls made from the server hold secrets and a host allowlist, avoiding CORS and SSRF (the IETF draft adds checking the resolved IP and not following redirects); E3's opinion was to defer a generic =http_fetch=; the user chose an allowlisted generic fetch instead (Decided 2026-10-28). 
 
 * Evidence
 
