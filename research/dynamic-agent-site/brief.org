@@ -27,6 +27,7 @@ An experiment (user, 2026-10-28): to learn how well an agent can reshape a page 
 
 - *R1. The site starts as a skeleton and the assistant reshapes it.* A visitor asks in chat for a section, layout or content change and sees it appear on their page without a reload or a developer; the change lasts for that visit only.
 - *R2. The assistant fetches data and chooses how to show it.* Asked for e.g. "the weather for my city as a chart", it calls an API on the owner's allowlist, reads the result and renders a display the visitor can then refine in conversation. Adding a source means adding a host (and secret) to the list, not writing code.
+- *R6. A data-capable component catalogue.* About ten components (heading, text, image, card, list, row/column container, table, chart, key-figure tile, form/button) so requests like "chart this" or "show as a table" work.
 - *R3. A core agent loop.* Chat in, model call, tool calls executed, results fed back, until the model stops; with explicit states the UI can show.
 - *R5. Visitors need nothing but a browser.* The site owner's small server supplies the Claude key and the data-API secrets; it stores no page or conversation.
 - *R4. Simplest stack that does the job, renderer swappable.* One build: React (or Preact) draws the page spec through a fixed component catalogue. The page spec and the tools do not depend on the renderer, so a second renderer could be added without changing them.
@@ -51,10 +52,13 @@ An experiment (user, 2026-10-28): to learn how well an agent can reshape a page 
 | 2026-10-28 | The purpose is an experiment: learn how well an agent reshapes a page and what is hard. Not a product or a personal tool. |
 | 2026-10-28 | "Working" is judged by open-ended play, not a fixed scripted test set. |
 | 2026-10-28 | Build once, on React (or Preact), with the page spec and tools kept separate from the renderer so a second renderer (e.g. HTMX/Datastar) can be added later. Pending the revised E1 cost comparison. |
+| 2026-10-28 | The first component catalogue is data-capable, about 10 components: heading, text, image, card, list, layout container (row/column), table, chart (line/bar/pie), key-figure tile, form/button. More can be added later. |
 
 * Terms
 
 - *page spec* (agreed 2026-10-28): the structured JSON description of the current page, a list of components with ids plus the data they show; the assistant edits it and the page is drawn from it. Example: "the assistant added a chart to the page spec." Avoid: DOM, layout, schema.
+
+- *component catalogue* (proposed 2026-10-28, not yet agreed): the fixed list of component types the page knows how to draw (e.g. chart, table); the page spec may only use types from it. Avoid: widget library, design system.
 
 * Assumptions
 
