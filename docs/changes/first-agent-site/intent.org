@@ -38,6 +38,9 @@ Done when the user has played with it open-endedly and knows what is hard about 
 * New terms
 - *page spec*: the structured JSON description of the current page, a list of components with ids plus the data they show; the assistant edits it and the page is drawn from it. Example: "the assistant added a chart to the page spec." Avoid: DOM, layout, schema. (agreed 2026-10-28)
 - *component catalog*: the fixed list of component types the page knows how to draw; the page spec may only use types from it. Example: "add a map component to the catalog so the assistant can show locations." Avoid: widget library, design system, catalogue. (agreed 2026-10-28)
+- *skeleton*: the page spec a visitor starts with, a header area and an empty content area beside the chat; a reload returns to it. Example: "a reload returns the skeleton." Avoid: template, blank page. (agreed 2026-10-28)
+- *turn*: everything between one visitor message and the assistant's finished reply, including every model and tool call; the unit undo reverts and stopping cancels. Example: "undo reverts the assistant's last turn." Avoid: step, run, iteration. (agreed 2026-10-28)
+- *allowlist*: the owner's list of hosts the fetch tool may call, each with an optional secret the server adds. Example: "add the weather API to the allowlist." Avoid: whitelist, connector list. (agreed 2026-10-28)
 
 * Open Questions
 ** Which data sources does the first test use?

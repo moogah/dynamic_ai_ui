@@ -12,3 +12,21 @@ The fixed list of component types the page knows how to draw (e.g. chart, table,
 - Example :: "add a map component to the catalog so the assistant can show locations."
 - Avoid :: widget library, design system, catalogue
 - Specs :: page-spec
+
+* skeleton
+The page spec a visitor starts with: a header area and an empty content area, beside the chat. A reload returns to it.
+- Example :: "a reload returns the skeleton."
+- Avoid :: template, blank page
+- Specs :: page-spec
+
+* turn
+Everything between one visitor message and the assistant's finished reply, including every model call and tool call in between. The unit undo reverts and stopping cancels.
+- Example :: "undo reverts the assistant's last turn."
+- Avoid :: step, run, iteration
+- Specs :: agent-loop, page-spec
+
+* allowlist
+The owner's list of hosts the fetch tool may call, each with an optional secret the server adds to requests.
+- Example :: "add the weather API to the allowlist."
+- Avoid :: whitelist, connector list
+- Specs :: data-fetch

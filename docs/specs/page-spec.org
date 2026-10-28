@@ -11,7 +11,7 @@ The page SHALL show exactly what the page spec describes: components, each with 
 
 *** Scenario: The skeleton on first load
 - *WHEN* a visitor opens the site
-- *THEN* they see the skeleton page spec drawn: a header area and an empty content area
+- *THEN* they see the skeleton drawn: a header area and an empty content area
 - *AND* the chat beside it
 
 *** Scenario: An edit appears without a reload
@@ -40,7 +40,7 @@ The page spec SHALL live in the visitor's browser only.
 
 *** Scenario: A reload returns the skeleton
 - *WHEN* a visitor who has shaped the page reloads it
-- *THEN* they see the skeleton page spec again
+- *THEN* they see the skeleton again
 
 ** Requirement: Undo the assistant's last turn
 Before each assistant turn the page SHALL keep a copy of the page spec; an undo control restores it. One step back only.
