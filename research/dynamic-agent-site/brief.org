@@ -21,10 +21,20 @@ The assistant will also need to have tools for making API calls to gather data, 
 
 * Goals (speculated)
 
-- *R1. The site starts as a skeleton and the assistant reshapes it.* A user asks in chat for a section, layout or content change and sees it appear on the page without a reload or a developer.
+- *R1. The site starts as a skeleton and the assistant reshapes it.* A visitor asks in chat for a section, layout or content change and sees it appear on their page without a reload or a developer; the change lasts for that visit only.
 - *R2. The assistant fetches data and chooses how to show it.* Asked for e.g. "the weather for my city as a chart", it calls an API, reads the result and renders a display the user can then refine in conversation.
 - *R3. A core agent loop.* Chat in, model call, tool calls executed, results fed back, until the model stops; with explicit states the UI can show.
 - *R4. Simplest stack that does the job.* React is the default candidate; HTMX and other departures are weighed against it.
+
+* Non-goals
+
+- Persisting a visitor's page across reloads, accounts, or a shared site edited for other visitors (2026-10-28: changes are for this visitor only and vanish on reload).
+
+* Decided
+
+|       Date | Decision |
+|------------+----------|
+| 2026-10-28 | Changes are seen only by the visitor who made them, and are gone on reload. No server-side page store. |
 
 * Assumptions
 
@@ -34,7 +44,7 @@ The assistant will also need to have tools for making API calls to gather data, 
 * Open Questions
 
 ** Who sees the changes, and do they persist?
-Critical: decides whether there is a server-side page store at all. Options: (a) one user's session only, gone on reload; (b) saved per user; (c) the assistant edits one shared site every visitor sees (a site builder). Not yet asked.
+Closed 2026-10-28 in * Decided: this visitor only, gone on reload.
 
 ** What does the assistant manipulate: raw DOM/HTML, or a structured page description rendered by fixed components?
 Critical: decides the stack and the safety story. E1 and E2 both point to a structured page spec (A2UI / json-render shape) over a fixed component catalogue; the alternative is whole-HTML regeneration in a sandbox. To ask after persistence.
