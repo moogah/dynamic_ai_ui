@@ -160,26 +160,28 @@ async function send(userText: string, signal: AbortSignal) {
 - [O] Client-executed tools are the industry pattern for UI actions: AI SDK (=onToolCall=), OpenAI Agents (interruptions), LangGraph (=interrupt=) all model "the browser must do something" as a paused run that resumes with a result.
 - [O] Dedicated, typed tools over generic ones where an action needs gating, rendering or audit (skill =agent-design.md=); the same logic argues for connectors over =http_fetch=.
 - [O] Data filtering before context (dynamic filtering, programmatic tool calling, context editing) is the provider-endorsed answer to large payloads.
-- [I] Keys stay on a server in every production pattern found; browser-direct calls are framed as BYOK or internal-tool only.
+- [O] Long-lived keys stay on a server in every production pattern found; browser-direct calls with a key are framed as BYOK, internal-tool or development only. The exceptions are short-lived tokens minted for the client: Anthropic's App Attest (iOS/macOS apps only) and OpenAI's Realtime =ek_= client secrets (minted by your backend). Anthropic has no web-page equivalent. (Revision: was [I], now sourced; exceptions added.)
 
 * Bearing on the design
 
 /Opinion, not evidence./
 
-- *Where the loop runs* (open question): Hybrid B: the loop and DOM tools in the browser, a thin stateless server that forwards model calls with the key and runs data connectors with their secrets. It keeps the loop tiny and DOM tools instant, hides every key, and avoids CORS. Lock the system prompt and tool list on the proxy, and rate-limit it. If the brief's "who sees the changes" question lands on (c) shared site, move to Hybrid A (server loop), because the server must then own the transcript and validate page writes anyway.
+- *Where the loop runs* (open question): a hybrid in which a stateless server holds the key, fixes the system prompt and tool list, and runs data connectors, while the browser holds the transcript and the page spec and runs the page-spec tools. Revised 2026-10-28: Hybrid A and B cost the same number of requests per browser-tool turn, and a B proxy that pins the prompt and tools is in effect A without a framework. So the choice is between (i) the hand-written loop plus a ~50-line proxy that pins =system= and =tools=, and (ii) the AI SDK's =useChat= with page-spec tools lacking =execute=, which packages the same shape with typed tool-part states for the UI. Both fit the Decided rows (per-visitor, ephemeral, page spec only) without a server-side store. The earlier "move to Hybrid A if the site is shared" condition is moot: the brief decided per-visitor. Either way, authenticate and rate-limit the endpoint; no Anthropic mechanism lets the page hold its own credential.
 - *R3*: Hand-write the ~30-line loop with an explicit 6-7 state enum. The SDK tool runner is a fine alternative but hides the states the UI wants to show, and it is beta. XState only if the states grow (approvals, retries, multi-pane). LangGraph, Agent SDK and Managed Agents are heavier than this needs.
 - *R2*: Registered, config-driven connectors with server-side secret injection and hostname allowlists; no generic =http_fetch= in v1. Return projections plus a =data_id=; let render tools bind components to =data_id= so the model chooses the display without carrying the data.
-- *R4 (simple)*: The whole agent side needs only =@anthropic-ai/sdk= (or plain =fetch= to the proxy), a schema validator, and ~100 lines of server. No agent framework required.
+- *R4 (simple)*: The whole agent side needs only =@anthropic-ai/sdk= (or plain =fetch= to the proxy), a schema validator, and ~100 lines of server. No agent framework required; the AI SDK is the one framework that matches the shape closely enough to be worth weighing (it ties the UI to React hooks, which suits the default renderer).
 - *Model*: =claude-sonnet-5-5= for the page loop is a reasonable cost/latency starting point, with =claude-opus-5-5= the skill default; latency of a turn is the UX risk, so measure. Use =auto= tool choice and =strict: true=.
 
 * Leads
 
 - Probe: build the 30-line browser loop + 50-line proxy against one public API (weather) and one DOM tool; measure turn latency, tokens per turn and cache hit rate.
-- Probe: does the TS SDK =toolRunner= run in the browser behind a proxy =baseURL=, and does it expose enough per-step events to drive the state enum?
+- Probe: does the TS SDK =toolRunner= expose enough per-step events to drive the state enum? (Partly answered 2026-10-28: it runs in a browser only with =dangerouslyAllowBrowser: true=, which the client requires even with a proxy =baseURL= and a dummy key; it has no Node-only imports.)
 - Thread: how should the proxy authenticate an anonymous visitor and cap spend per session (cookie + quota, Turnstile, per-IP)?
 - Thread: =data_id= store: browser memory vs server cache; what happens on reload (ties to the brief's persistence question).
 - Probe: page-state representation in context: outline vs full structured description vs =get_page= tool; tokens and accuracy over 30 turns.
 - Thread: prompt injection from API data that then drives DOM tools (e.g. a field containing instructions to insert a link or script); which DOM tools need approval or sanitisation (overlaps E1/E2).
-- Check: fetch the AI SDK and OpenAI Agents JS docs directly (blocked here: =ai-sdk.dev=, =openai.github.io= need to be allowed in network settings) to confirm method names and browser support.
-- Check: Anthropic's own documentation of =anthropic-dangerous-direct-browser-access= (only a secondary source was read).
-- Check: cancellation semantics: what the API bills and what history should hold after aborting a stream mid-tool-input.
+- +Check: fetch the AI SDK and OpenAI Agents JS docs directly.+ Done 2026-10-28 (revision).
+- +Check: Anthropic's own documentation of =anthropic-dangerous-direct-browser-access=.+ Done 2026-10-28: release note, TS SDK page, SDK source and a probe.
+- Check: cancellation semantics: what the API bills after aborting a stream mid-tool-input. Still open: the SDK docs cover abort mechanics, and no Claude docs page on billing for aborted streams was found.
+- Probe: the same page-spec loop built on AI SDK =useChat= (tools without =execute=) vs the hand loop + pinning proxy: lines of code, state visibility, turn latency.
+- Check: the VoltAgent =startsWith= hostname-bypass issue (GitHub access to that repo was not enabled in this session).

@@ -1,7 +1,7 @@
 #+TITLE: E2: Prior art for agent-generated UI (generative UI)
 #+OPTIONS: ^:{} -:nil
 
-Evidence for [[file:../brief.org][the brief]]: goals R1, R2 and the open question "What does the assistant manipulate: raw DOM/HTML, or a structured page description rendered by fixed components?".
+Evidence for [[file:../brief.org][the brief]]: goals R1, R2 and the open question "What does the assistant manipulate: raw DOM/HTML, or a structured page description rendered by fixed components?" (since closed: the page spec only).
 
 Tags: [O] observed (read from the cited source); [I] inferred (my reading, or a secondary source I could not check against the primary one).
 
@@ -15,7 +15,16 @@ One pass on 2026-10-28, web search plus fetches of primary sources where the ses
 
 - [O] Read primary: GitHub READMEs for =google/A2UI=, =vercel-labs/json-render=, =MCP-UI-Org/mcp-ui=, =modelcontextprotocol/ext-apps=, =ag-ui-protocol/ag-ui=. Raw spec files: A2UI =specification/v0_9/docs/a2ui_protocol.md=; MCP Apps =specification/2026-01-26/apps.mdx=.
 - [O] Search-only (secondary write-ups, docs shown as search snippets): AI SDK generative UI, OpenAI Apps SDK, Thesys C1 / OpenUI, CopilotKit patterns, Claude Artifacts, Imagine with Claude, websim, tldraw make real, Adaptive Cards, Google Gemini dynamic view, v0 / bolt / Lovable.
-- [O] *Could not fetch.* DNS was blocked by the session's network allowlist for a2ui.org, ai-sdk.dev, developers.openai.com, mcpui.dev and docs.thesys.dev. A raw path into the =vercel/ai= repo returned 404. Rows built on those sources rest on search snippets and are marked accordingly.
+- [O] *Could not fetch (first pass).* DNS was blocked by the session's network allowlist for a2ui.org, ai-sdk.dev, developers.openai.com, mcpui.dev and docs.thesys.dev. A raw path into the =vercel/ai= repo returned 404. Rows built on those sources rested on search snippets.
+- [O] *Revision, 2026-10-28 (later the same day).* Network access opened, and all five hosts were fetched with curl through the session proxy (WebFetch still failed DNS). Pages read:
+  - a2ui.org: home, renderers, roadmap, client setup, components, catalogs, data flow, transports, agent development, A2UI over MCP, the v0.9.1 spec and the v1.0 evolution guide.
+  - ai-sdk.dev (=.md= pages): generative user interfaces, RSC overview, migrating to UI.
+  - developers.openai.com: Apps SDK "Add UI to your MCP server".
+  - mcpui.dev: home page.
+  - docs.thesys.dev: index, C1 archive, how C1 works, rendering UI; and openui.com docs: intro, comparison.
+  - json-render: json-render.dev docs (specs, data binding, streaming, A2UI), the repo's =CHANGELOG.md= and =packages/core/CHANGELOG.md= (raw), and npm registry release dates.
+  - The source of =@a2ui/web_core= 0.14.0 from its npm tarball, to settle the replace-or-merge question.
+  - Every row and bullet that relied on these hosts was rechecked. Upgrades from [I] to [O] and corrections are marked "Revised 2026-10-28" in place. GitHub's API and HTML pages returned 403, so star counts were not re-checked.
 
 * Findings
 
@@ -25,17 +34,17 @@ Abbreviations. Emits: what the model outputs. Cat.: component catalogue. Edits: 
 
 | System                        | Emits                                 | Cat.                       | Edits                                         | Bind                                  | Safety                       | Renderers                    | Maturity / licence                       | Fit  | Tag |
 |-------------------------------+---------------------------------------+----------------------------+-----------------------------------------------+---------------------------------------+------------------------------+------------------------------+------------------------------------------+------+-----|
-| Google A2UI                   | JSON msgs, flat component list by id  | client catalog; custom ok  | =updateComponents= by id, =updateDataModel=   | JSON Pointer =path= bindings          | data only, no code           | Lit, Angular, React; Flutter | v0.9.1 stable, v1.0 RC; Apache-2.0       | high | O   |
-| Vercel json-render            | JSON spec: =root= + =elements= map    | Zod catalog; 36 shadcn     | streamed patches; patch/merge/diff modes      | =$state=, =$bindState=, =$computed=   | schema-validated data        | React, Vue, Svelte, RN, more | ~18.8k stars; Apache-2.0                 | high | O/I |
-| Thesys OpenUI (Lang)          | compact line DSL                      | registered components      | line-by-line streaming                        | not checked                           | no code exec                 | React, Vue, Svelte           | MIT; 2026                                | high | I   |
-| Thesys C1                     | UI spec via OpenAI-compatible API     | vendor library (Crayon)    | streamed; regenerate                          | via tool calls in API                 | data only                    | React (=genui-sdk=)          | commercial API; Crayon MIT               | med  | I   |
+| Google A2UI                   | JSON msgs, flat component list by id  | JSON Schema catalog; custom ok | =updateComponents= by id (replaces props), =updateDataModel= | JSON Pointer =path= bindings | data only, no code | React, Lit, Angular, Flutter stable; Compose alpha | v0.9.1 current, v1.0 RC; Apache-2.0 | high | O |
+| Vercel json-render            | JSON spec: =root= + =elements= map    | Zod catalog; 36 shadcn     | SpecStream JSONL RFC 6902 patches; patch/merge/diff edit modes | =$state=, =$bindState=, =$item=, =$computed= | schema-validated data | React, Vue, Svelte, Solid, RN, more | 0.21.3, first release Jan 2026; Apache-2.0 | high | O |
+| Thesys OpenUI (Lang)          | compact line DSL                      | registered components (Zod) | line-by-line streaming                       | built-in data fetching (vendor claim) | no code exec               | React, Vue, Svelte, Angular  | MIT; successor to C1                     | high | O/I |
+| Thesys C1                     | XML-like "C1 DSL" via OpenAI-compatible API | vendor library (Crayon) | streamed; regenerate                      | via tool calls in API                 | data only                    | React (=@thesysai/genui-sdk=) | commercial API, now archived ("legacy") | low  | O   |
 | AG-UI (CopilotKit)            | event stream (transport)              | n/a; carries others        | =STATE_DELTA= (JSON Patch), snapshots         | shared state, tool-call events        | depends on payload           | many agent frameworks        | ~16.9k stars; MIT                        | med  | O/I |
 | CopilotKit gen-UI             | tool call → component; or spec; or HTML | app-registered          | re-render on tool/state                       | tool args/results → props             | varies by pattern            | React                        | MIT                                      | med  | I   |
 | AI SDK UI (Vercel)            | tool call → prebuilt component        | fixed, app code            | new message part per call                     | =part.output= → props                 | no model code                | React, Vue, Svelte           | stable (v5+); Apache-2.0                 | low  | O   |
 | AI SDK RSC =streamUI=         | tool call → server React node         | fixed, app code            | streamable UI                                 | function output                       | no model code                | React RSC                    | experimental, not recommended            | low  | O   |
 | MCP Apps (SEP-1865)           | tool call → predeclared =ui://= HTML  | open (any HTML), by server | tool-result notifications; app calls tools    | =structuredContent= via postMessage   | sandboxed iframe, strict CSP | any host (Claude, ChatGPT…)  | stable 2026-01-26; Apache-2.0            | low  | O   |
 | MCP-UI                        | HTML / URL / remote-dom resource      | open                       | as MCP Apps                                   | as MCP Apps                           | sandboxed iframe             | React, Web Component         | 5.2k stars; Apache-2.0                   | low  | O   |
-| OpenAI Apps SDK               | tool call → widget HTML               | open, by app               | =toolOutput=, =setWidgetState=                | =structuredContent=                   | iframe, CSP                  | ChatGPT                      | now on MCP Apps keys                     | low  | I   |
+| OpenAI Apps SDK               | tool call → widget HTML               | open, by app               | MCP Apps bridge; =setWidgetState= extension   | =structuredContent=                   | iframe, CSP                  | ChatGPT                      | implements MCP Apps; =window.openai= aliases | low | O |
 | Claude Artifacts              | whole HTML / React / SVG code         | open                       | rewrite or targeted edit of the file          | none live (static code)               | sandboxed iframe, CSP        | browser                      | GA product                               | med  | I   |
 | Imagine with Claude           | code generated live per interaction   | open                       | regenerates on each click                     | model in loop                         | not documented               | browser                      | 5-day preview, Sep 2025                  | med  | I   |
 | Gemini dynamic view           | coded interactive response            | open                       | per prompt                                    | model                                 | not documented               | Gemini, Search AI Mode       | experiment                               | low  | I   |
@@ -44,38 +53,64 @@ Abbreviations. Emits: what the model outputs. Cat.: component catalogue. Edits: 
 | Adaptive Cards (MS)           | JSON card (schema 1.6)                | fixed schema               | replace the card                              | =${expr}= templating                  | data only                    | Teams, Outlook, web, mobile  | mature, MIT                              | med  | I   |
 | v0 / bolt / Lovable (contrast)| full app source code                  | open                       | code edits, rebuild                           | generated fetch code                  | sandbox / container          | React/Next, etc.             | commercial                               | low  | I   |
 
+Revised 2026-10-28, changes to the table:
+- A2UI. Catalog is a JSON Schema file. Edits replace props by id. Flutter is now stable and Jetpack Compose alpha.
+- json-render. SpecStream and the edit modes are confirmed, so the tag moves to O. The release is 0.21.3, first published Jan 2026.
+- OpenUI. Angular added to the renderers.
+- C1. It emits an XML-like "C1 DSL", and its docs are now an archive. Fit lowered to low.
+- OpenAI Apps SDK. Confirmed against its own docs, so the tag moves to O.
+
 ** Google A2UI
 
-- [O] Declarative JSON "A2UI Response": the agent sends UI intent; the client renders it with its own native components. The README's phrase is "safe like data, but expressive like code". Source: [[https://github.com/google/A2UI][google/A2UI]].
-- [O] There are four server→client messages, each carrying ="version": "v0.9"=:
+- [O] Declarative JSON "A2UI Response": the agent sends UI intent; the client renders it with its own native components. The README's phrase is "safe like data, but expressive like code". Source: [[https://github.com/google/A2UI][google/A2UI]]. Revised 2026-10-28: a2ui.org now links the repo as [[https://github.com/a2ui-project/a2ui][a2ui-project/a2ui]], and the raw README is identical at both paths.
+- [O] There are four server→client messages, each carrying a ="version"= field ("v0.9" or "v0.9.1"):
   - =createSurface= (=surfaceId=, =catalogId=, optional =theme=, =sendDataModel=)
   - =updateComponents= (a flat =components= array)
   - =updateDataModel= (a JSON Pointer =path= plus =value=; upsert, and omitting =value= deletes)
   - =deleteSurface=
-  Source: [[https://raw.githubusercontent.com/google/A2UI/main/specification/v0_9/docs/a2ui_protocol.md][A2UI v0.9 protocol]].
+  Source: [[https://raw.githubusercontent.com/google/A2UI/main/specification/v0_9/docs/a2ui_protocol.md][A2UI v0.9 protocol]]; re-checked against [[https://a2ui.org/specification/v0.9.1-a2ui/][v0.9.1 on a2ui.org]]. That version also standardises the =application/a2ui+json= MIME type.
 - [O] It is an adjacency list. Components are flat; parents list child ids; exactly one component has id =root=. Updates are buffered until =root= arrives. The flat design is chosen because it is "easier for LLMs to generate incrementally".
 - [O] Binding: ={"path": "/abs/pointer"}=, relative paths inside templates, ={"call": ...}= for registered functions, and =formatString= with =${...}=.
 - [O] Client→server: an =action= event (=name=, =surfaceId=, =sourceComponentId=, =context=), plus an =error= message for validation failures. Local =functionCall= actions never leave the client.
-- [O] Catalogs: the client advertises =supportedCatalogIds= and optional =inlineCatalogs=. Custom components come through a registry.
-- [O] The spec does not say whether re-sending an existing id replaces the component or merges into it.
-- [O] Transport is not defined; A2UI can travel over A2A, AG-UI or MCP.
-- [O] Status: "early stage public preview". v0.9.1 is stable, v1.0 is a release candidate, licence Apache-2.0.
-- [O] Renderers: Lit, Angular and React on npm. Flutter (via GenUI SDK) and SwiftUI are not yet published.
+- [O] Catalogs: the client advertises =supportedCatalogIds= and optional =inlineCatalogs=. Custom components come through a registry. Revised 2026-10-28: a catalog is "a JSON Schema file outlining the components, functions, and themes that agents can use", and "all A2UI JSON sent from the agent is validated against the chosen catalog" ([[https://a2ui.org/concepts/catalogs/][Catalogs]]).
+- [O] Revised 2026-10-28, previously "the spec does not say whether re-sending an existing id replaces the component or merges into it". The spec still only says components are "added to or updated". The reference implementation settles it:
+  - When an existing id arrives again, =@a2ui/web_core= 0.14.0 (=processing/message-processor.js=, =applyComponentUpdate=) sets =existing.properties = properties=, so the new props replace the old ones and are not merged.
+  - If the component type or catalog changes, it deletes the component and creates it again.
+  - A batch with a duplicate id is rejected.
+  - There is no remove-component message. A component leaves the tree when its parent's =children= list no longer names it (orphans are governed by an =allowOrphanComponents= validation option).
+- [O] Transport is not defined; A2UI can travel over A2A, AG-UI or MCP. Revised 2026-10-28: the roadmap also lists REST and WebSockets as complete ([[https://a2ui.org/roadmap/][Roadmap]]). Over MCP, a resource can hold a static template (=createSurface= + =updateComponents=), and each tool result then returns only an =updateDataModel= ([[https://a2ui.org/guides/a2ui_over_mcp/][A2UI over MCP]]).
+- [O] Status: "early stage public preview". v0.9.1 is current and stable, v1.0 is a release candidate, licence Apache-2.0. Confirmed on [[https://a2ui.org/][a2ui.org]] 2026-10-28.
+- [O] v1.0 (candidate) is not a drop-in successor ([[https://a2ui.org/specification/v1.0-evolution-guide/][v1.0 evolution guide]]):
+  - Bindings become =@path= and =@call=.
+  - =theme= is removed.
+  - Components and initial data can be sent inside =createSurface=.
+  - Catalogs gain =allowedParents= and =allowedChildren=.
+  - Bidirectional RPC is added (=callRendererFunction=, =callAgentFunction=).
+  - "client" and "server" are renamed renderer and agent.
+- [O] Renderers. Revised 2026-10-28, previously "Lit, Angular and React on npm. Flutter (via GenUI SDK) and SwiftUI are not yet published". The [[https://a2ui.org/reference/renderers/][renderers page]] lists:
+  - React, Lit, Angular and Flutter (GenUI SDK) as stable for v0.8 and v0.9.1, with v1.0 support planned.
+  - Jetpack Compose as alpha on v0.9.1, and SwiftUI as planned.
+  - All web renderers share =@a2ui/web_core=.
+  - The React renderer exposes =<A2UISurface>=. It was launched in Q2 2026; the first npm release was 2026-03-17 and the latest is 0.14.0, from 2026-10-17.
+  - The same page lists json-render as an "ecosystem renderer" for A2UI catalogs.
 
 ** Vercel json-render
 
-- [O] The model emits a flat JSON spec: =root= plus an =elements= map, where each element has =type=, =props= and =children=.
+- [O] The model emits a flat JSON spec: =root= plus an =elements= map, where each element has =type=, =props= and =children=. Revised 2026-10-28: the spec can also carry an initial =state= object, and lists use a =repeat= field (=statePath=, =key=) with =$item= / =$index= ([[https://json-render.dev/docs/data-binding][Data binding]]).
 - [O] The catalog is defined with =defineCatalog= and Zod prop schemas; =catalog.prompt()= generates the system prompt from it.
 - [O] State expressions: =$state=, =$bindState= for forms, =$cond=/=$then=/=$else=, =$template=, =$computed=; elements can also carry =visible= conditions. Actions use =emit=, a built-in =setState=, and a =watch= field.
-- [O] Streaming: =createSpecStreamCompiler= yields partial specs and patches.
-- [O] Renderers: React, Vue, Svelte, Solid, React Native, Remotion, React PDF, React Email, Ink, Satori, R3F, Next.js and TanStack Start. Licence Apache-2.0, about 18.8k stars. Source: [[https://github.com/vercel-labs/json-render][vercel-labs/json-render]].
-- [I] First released January 2026 ([[https://infoq.com/news/2026/03/vercel-json-render][InfoQ]]).
-- [I] v0.14 added edit modes: patch (RFC 6902), merge (RFC 7396) and unified diff. This comes from a third-party skill page and was not checked in the repo.
+- [O] Streaming: =createSpecStreamCompiler= yields partial specs and patches. Revised 2026-10-28: SpecStream is JSONL in which "each line is a JSON patch operation" (RFC 6902: add, remove, replace, move, copy, test) against JSON Pointer paths such as =/elements/card-1/props= ([[https://json-render.dev/docs/streaming][Streaming]]). The model writes this into its text output, and the server transform =pipeJsonRender()= separates text from patches.
+- [O] Renderers: React, Vue, Svelte, Solid, React Native, Remotion, React PDF, React Email, Ink, Satori, R3F, Next.js and TanStack Start. Licence Apache-2.0, about 18.8k stars (stars not re-checked). Source: [[https://github.com/vercel-labs/json-render][vercel-labs/json-render]].
+- [O] Revised 2026-10-28, was [I] from InfoQ: first released January 2026. =@json-render/core= and =@json-render/react= 0.0.1 and 0.1.0 were published to npm on 2026-01-14. The latest is 0.21.3 (2026-10-24), after 33 React releases.
+- [O] Revised 2026-10-28, was [I] from a third-party page: =@json-render/core= 0.14.0 added "universal edit modes … for multi-turn spec refinement: =patch= (RFC 6902), =merge= (RFC 7396), and =diff= (unified diff)", with helpers =deepMergeSpec()=, =diffToPatches()= and =buildEditUserPrompt()=. It also added a YAML wire format, =@json-render/yaml= ([[https://raw.githubusercontent.com/vercel-labs/json-render/main/packages/core/CHANGELOG.md][core CHANGELOG]]).
+- [O] Added 2026-10-28: an =@json-render/mcp= package integrates with MCP Apps. The [[https://json-render.dev/docs/a2ui][A2UI page]] says the core is "schema-agnostic": you "define a catalog that matches A2UI's format and build a renderer that understands it". Its example uses the v0.8 shape, and nothing in it reads A2UI messages for you.
 
 ** Thesys C1 and OpenUI
 
-- [I] C1 is an OpenAI-compatible endpoint (base URL =api.thesys.dev/v1/embed=) that returns a UI spec. The client renders it with =<C1Component>= or =<C1Chat>= from =@thesysai/genui-sdk=, on top of the Crayon design system (MIT). Output streams progressively. The docs could not be fetched; this is from search snippets of [[https://docs.thesys.dev/guides/what-is-thesys-c1][docs.thesys.dev]].
-- [I] Added: OpenUI is Thesys's MIT-licensed open framework. OpenUI Lang is a line-oriented DSL in which each line binds one component, and the model can only use registered components. Thesys claims up to 67% fewer tokens than JSON. Bindings: React, Vue and Svelte. Thesys also reports OUI-1 (Sep 2026), a model fine-tuned to emit OpenUI Lang ([[https://mer.vin/2026/05/openui-lang-mit-generative-ui-that-cuts-llm-output-tokens-versus-json/][mer.vin]], [[https://rits.shanghai.nyu.edu/ai/oui-1-diffusion-model-generative-ui/][NYU RITS]]). Why added: a third point in the format space, a DSL rather than JSON or HTML.
+- [O] Revised 2026-10-28, was [I] from snippets. C1 is an OpenAI-compatible endpoint (base URL =https://api.thesys.dev/v1/embed=) that returns "a UI specification object (C1 DSL)". The response uses "an XML-like structure to package multiple types of content into a single string" ([[https://docs.thesys.dev/legacy/guides/how-c1-works.md][How C1 works]]). The client renders it with =<C1Component>= or =<C1Chat>= from =@thesysai/genui-sdk=, whose peer dependency is =@crayonai/react-ui= ([[https://docs.thesys.dev/legacy/guides/rendering-ui.md][Rendering]]). Responses can be streamed.
+- [O] *Correction 2026-10-28:* the C1 docs are now an archive under =/legacy=, "kept online for teams already running C1 in production. New projects should start with the OpenUI docs." OpenUI is "the actively developed successor to C1" ([[https://docs.thesys.dev/legacy/index.md][C1 archive]]). The C1 row's fit is lowered from med to low.
+- [O] Revised 2026-10-28, partly confirmed. [[https://www.openui.com/docs][OpenUI]] is built on OpenUI Lang, "a streaming-first language with first-party runtimes for React, Vue, Svelte, and Angular". The earlier text omitted Angular. The renderer draws "each component as its line arrives", and components are defined with Zod. The licence is MIT ([[https://www.openui.com/docs/openui-lang/comparison][comparison]]).
+- [I] Vendor claims, not checked independently: "up to 67% fewer tokens than JSON", and roughly 3x fewer tokens than json-render or A2UI in Thesys's own benchmark. Thesys also ships an =@openuidev/a2ui= package for A2UI v1.0. OUI-1 (Sep 2026), a model fine-tuned to emit OpenUI Lang, is still only from secondary sources ([[https://mer.vin/2026/05/openui-lang-mit-generative-ui-that-cuts-llm-output-tokens-versus-json/][mer.vin]], [[https://rits.shanghai.nyu.edu/ai/oui-1-diffusion-model-generative-ui/][NYU RITS]]). Why added: a third point in the format space, a DSL rather than JSON or HTML.
 
 ** AG-UI protocol and CopilotKit
 
@@ -90,8 +125,10 @@ Abbreviations. Emits: what the model outputs. Cat.: component catalogue. Edits: 
 
 ** Vercel AI SDK generative UI and v0
 
-- [O] AI SDK UI (v5+): a server tool call appears as a message part typed =tool-${toolName}=. The client switches on =part.state= (=input-available=, =output-available=, =output-error=) and renders an app-owned React component from =part.output=. The model chooses which tool to call and what arguments to pass; it never writes the UI itself. Source: search snippets of [[https://ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces][AI SDK docs]] (the page itself was not fetchable).
-- [O] AI SDK RSC =streamUI= streams server React components from tool output. Its docs mark it "experimental" and recommend AI SDK UI instead. Known problems: aborts do not work, components flicker on remount, and there are no multi-step tools ([[https://ai-sdk.dev/docs/ai-sdk-rsc/migrating-to-ui][migrating to UI]], snippet).
+- [O] AI SDK UI (v5+): a server tool call appears as a message part typed =tool-${toolName}=. The client switches on =part.state= (=input-available=, =output-available=, =output-error=) and renders an app-owned React component from =part.output=. The model chooses which tool to call and what arguments to pass; it never writes the UI itself. Revised 2026-10-28: confirmed against the primary page. The docs say "Generative UI is the process of connecting the results of a tool call to a React component", and "In AI SDK 5.0, tool parts use typed naming: =tool-${toolName}=" ([[https://ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces][AI SDK docs]]).
+- [O] AI SDK RSC =streamUI= streams server React components from tool output. Revised 2026-10-28: confirmed against the primary pages.
+  - The overview says "AI SDK RSC is currently experimental. We recommend using AI SDK UI for production" ([[https://ai-sdk.dev/docs/ai-sdk-rsc/overview][RSC overview]]).
+  - The migration guide lists three problems: aborting a stream is "not possible" with server actions; components "remount on =.done()=, causing them to flicker"; and =streamUI= "does not support multi-step tool calls" ([[https://ai-sdk.dev/docs/ai-sdk-rsc/migrating-to-ui][migrating to UI]]).
 - [I] v0 (renamed v0.app in Jan 2026) generates React + Tailwind + shadcn source code. Generated components install into a codebase via =npx=. It is a code generator, not a runtime UI channel ([[https://resources.rework.com/tools/ai-coding/lovable-vs-bolt-new-vs-v0][rework comparison]]).
 - [I] The UI pattern is chat-scoped: each component sits inside a chat message. It is not one persistent page.
 
@@ -102,12 +139,20 @@ Abbreviations. Emits: what the model outputs. Cat.: component catalogue. Edits: 
 - [O] Sandbox: the View runs in a sandboxed iframe. Web hosts must use a sandbox proxy on another origin. The default CSP is =default-src 'none'= and =connect-src 'none'=, and nested frames are blocked.
 - [O] The View can call =tools/call=, =resources/read=, =ui/message= and =ui/update-model-context=. Messages are JSON-RPC over postMessage.
 - [O] Status: stable as of 2026-01-26; host support in Claude, ChatGPT, VS Code, Goose and others; Apache-2.0 ([[https://github.com/modelcontextprotocol/ext-apps][ext-apps]]).
-- [O] MCP-UI pioneered the idea and now implements MCP Apps. It offers =AppRenderer= and the legacy =UIResourceRenderer=, which also comes as a Web Component, with resource kinds =rawHtml=, =externalUrl= and =remoteDom=. 5.2k stars, Apache-2.0 ([[https://github.com/MCP-UI-Org/mcp-ui][mcp-ui]]).
+- [O] MCP-UI pioneered the idea and now implements MCP Apps. It offers =AppRenderer= and the legacy =UIResourceRenderer=, which also comes as a Web Component, with resource kinds =rawHtml=, =externalUrl= and =remoteDom=. 5.2k stars, Apache-2.0 ([[https://github.com/MCP-UI-Org/mcp-ui][mcp-ui]]). Revised 2026-10-28: confirmed on [[https://mcpui.dev][mcpui.dev]]. It reads "MCP-UI is now standardized into MCP Apps", the packages "implement the spec, and serve as a community playground", and "all remote code executes in sandboxed iframes". The site documents =AppRenderer= from =@mcp-ui/client= and a "Legacy MCP-UI Adapter". Its licence is Apache 2.0.
 - [I] The model does not author the UI: a developer writes it, and the model only triggers it. That fits "prebuilt widgets in someone else's chat host", not reshaping a site.
 
 ** OpenAI Apps SDK
 
-- [I] Widgets are HTML in an iframe, fed by =window.openai.toolOutput= and =setWidgetState=. ChatGPT now implements MCP Apps, and =window.openai= remains a compatibility layer. The MIME type =text/html+skybridge= is replaced by =text/html;profile=mcp-app=, and =toolOutput= maps to =structuredContent= ([[https://docs.skybridge.tech/resources/apps-sdk-and-mcp-apps][Skybridge]], [[https://sunpeak.ai/blogs/migrate-openai-apps-sdk-to-mcp-apps/][sunpeak]]). The OpenAI docs host was blocked.
+- [O] Revised 2026-10-28, was [I] from Skybridge and sunpeak. Source: [[https://developers.openai.com/apps-sdk/build/chatgpt-ui][Add UI to your MCP server]].
+  - "ChatGPT implements the open MCP Apps" standard. Components "run inside an iframe in ChatGPT, communicate with the host through the MCP Apps bridge", and the UI resource uses =mimeType: "text/html;profile=mcp-app"=.
+  - =window.openai= is a set of "compatibility aliases" that "remain available for existing integrations. New UI should use the shared fields". The docs pair each alias with its MCP Apps equivalent:
+    - =_meta["openai/outputTemplate"]= → =_meta.ui.resourceUri=
+    - =window.openai.toolOutput= → =ui/notifications/tool-result= (=structuredContent=)
+    - =callTool= → =tools/call=
+    - =sendFollowUpMessage= → =ui/message=
+- [O] *Correction 2026-10-28:* =setWidgetState= has no MCP Apps equivalent. It is a ChatGPT-only extension for widget-state persistence, listed alongside =requestCheckout=, file upload and =requestModal=. The portable route for telling the model about UI state is =ui/update-model-context=.
+- [I] The claim that the earlier MIME type =text/html+skybridge= was replaced still rests on the secondary sources ([[https://docs.skybridge.tech/resources/apps-sdk-and-mcp-apps][Skybridge]], [[https://sunpeak.ai/blogs/migrate-openai-apps-sdk-to-mcp-apps/][sunpeak]]). The current OpenAI page no longer mentions =skybridge=.
 
 ** Claude Artifacts and Imagine with Claude
 
@@ -135,6 +180,37 @@ Abbreviations. Emits: what the model outputs. Cat.: component catalogue. Edits: 
 
 - [I] v0, bolt.new and Lovable generate full app source code (React, sometimes with a Supabase backend). The edit loop is: change code, rebuild, preview. That is a developer workflow, not a runtime page the end user reshapes ([[https://addyo.substack.com/p/ai-driven-prototyping-v0-bolt-and][Osmani]]).
 
+** A2UI vs json-render as our page spec
+
+Added 2026-10-28, after the brief decided two things: the assistant edits a JSON page spec over a fixed component catalogue only, and changes are per-visitor and ephemeral. The facts come from the sections above. Rows tagged [I] are my evaluation.
+
+| Aspect | A2UI (v0.9.1) | json-render (0.21) | Tag |
+|--------+---------------+--------------------+-----|
+| Unit of change | A stream of four envelope messages. The page is the renderer's accumulated state, not a document. | One spec document (=root=, =elements=, =state=). Changes are RFC 6902 ops on it. | O |
+| Edit granularity | Whole component by id (props replaced, not merged). Data by JSON Pointer path. No remove-component message: remove by rewriting the parent's =children=. | Any JSON Pointer path, down to one prop, including =remove= and =move=. Edit modes: patch, merge, diff. | O |
+| Data binding | ={"path": ...}= (=@path= in v1.0), relative paths in templates, =formatString=, catalogue functions. Data model kept separate per surface. | =$state=, =$bindState=, =$item= / =$index= with =repeat=, =$cond=, =$computed=. State sits inside the spec or in a =StateProvider=. | O |
+| Catalogue definition | A JSON Schema file with a =catalogId=, negotiated through =supportedCatalogIds= / =inlineCatalogs=, plus per-framework component code. v1.0 adds parent/child constraints. | Zod schemas in TypeScript (=defineCatalog=) mapped to components (=defineRegistry=). =catalog.prompt()= writes the system prompt; 36 prebuilt shadcn components. | O |
+| Streaming of partial specs | Message by message (JSONL, SSE, WS). Rendering waits until =root= arrives, then shows placeholders for missing refs. No partial messages. | Line-level patches; =createSpecStreamCompiler= yields a partial spec after each line. | O |
+| React renderer | Official =@a2ui/react= on =@a2ui/web_core=. Stable for v0.9.1, first published Mar 2026, now 0.14.0. No v1.0 support yet. | =@json-render/react=, the first and main renderer. Published since Jan 2026, now 0.21.3 across 33 releases. Many sibling renderers. | O |
+| Maturity | "Early stage public preview". A v1.0 RC that renames binding keys is pending. | Pre-1.0 and fast-moving (21 minor versions in 10 months). | O |
+| Licence | Apache-2.0 | Apache-2.0 | O |
+| Native generation mode | The LLM writes "text and a JSON list of A2UI messages" from a schema-bearing prompt (=DirectJsonFormat=), and the agent parses and validates it. | The LLM writes SpecStream JSONL patches in its text, and the server splits them out (=pipeJsonRender=). | O |
+| Fit to LLM tool calls | Good. Each message type maps to one tool, and its body is the tool's input schema. | Weak as-is. A generic =apply_patch(ops)= tool asks the model for RFC 6902 pointers into arrays (=children/2=), a known failure mode. It needs wrapping in coarser tools. | I |
+
+- [I] *Could A2UI's messages be our tools verbatim?* Almost:
+  - =update_components(components[])= and =update_data_model(path, value)= map one-to-one. Each component's schema is a =oneOf= over the catalogue, which tool-input JSON Schema can express.
+  - =createSurface= / =deleteSurface=, =surfaceId=, =version= and catalogue negotiation serve agents sending UI across trust boundaries to renderers they do not control. With one page, one assistant and one fixed catalogue, they become constants the host fills in.
+  - Two gaps for an assistant that keeps reshaping a page. Removing a component needs a separate operation, since A2UI has only "rewrite the parent's children". And whole-component replacement means a one-prop change re-sends the component; that is acceptable because components are small.
+  - The v0.9→v1.0 rename (=path= → =@path=) means copying the wire format verbatim ties us to a moving version.
+- [I] *Per-visitor, ephemeral state suits both.* Neither needs a server-side store. The page spec lives in browser memory and is gone on reload, as decided. json-render's single document is easier to show to the model ("here is the current page spec") and to snapshot or undo than A2UI's accumulated message state. Undo is not a goal, but it is cheap.
+- [I] *Recommendation: define our own minimal page spec in json-render's document shape, edited through A2UI-style coarse tools.*
+  - Spec: ={root, elements: {id: {type, props, children}}, data}=, with bindings as ={"$data": "/pointer"}=.
+  - Tools: =upsert_components(components[])=, which replaces by id as A2UI does; =remove_component(id)=; =set_data(path, value)=; and a read tool that returns the current spec.
+  - Catalogue: Zod schemas that generate both the tool input schemas and runtime validation.
+  - Renderer: a small React registry. Because the shape matches json-render's, =@json-render/react= stays a drop-in if hand-written rendering grows.
+  - Why not adopt either wholesale: A2UI's protocol layers (surfaces, version, catalogue negotiation, A2A) solve problems we do not have and are still changing. json-render's native output is in-text patch streams, not tool calls, and its expression language (=$cond=, =$computed=, =watch=) is more than the first catalogue needs.
+  - What we lose: streaming partial UI inside a single tool call. Upserting component by component through tool calls gives coarse progressive rendering anyway.
+
 * Patterns
 
 - [O] *Three representations, one taxonomy.* CopilotKit names it directly: static (tool call → prebuilt component), declarative (JSON spec over a catalogue) and open-ended (HTML/code in an iframe).
@@ -142,7 +218,7 @@ Abbreviations. Emits: what the model outputs. Cat.: component catalogue. Edits: 
   - Declarative: A2UI, json-render, OpenUI, C1, Adaptive Cards.
   - Open-ended: Artifacts, Imagine with Claude, Gemini dynamic view, websim, make real.
 - [O] *The declarative systems converged on the same shape.* A flat map of components keyed by id, a separate data model bound by path, and a catalogue the client owns and advertises to the model. Seen in A2UI and json-render; [I] OpenUI Lang (one named binding per line) is the same idea in a terser syntax.
-- [O/I] *Incremental edits are patches or upserts keyed by id, not regeneration.* A2UI uses =updateComponents= and =updateDataModel=. json-render uses SpecStream patches and [I] JSON Patch, merge and diff modes. AG-UI uses =STATE_DELTA= JSON Patch. The open-ended systems regenerate whole files (websim, make real, Imagine).
+- [O] *Incremental edits are patches or upserts keyed by id, not regeneration.* A2UI uses =updateComponents= (whole-component replace by id) and =updateDataModel=. json-render uses SpecStream RFC 6902 patches plus patch, merge and diff edit modes (revised 2026-10-28: confirmed in the changelog, so this is no longer [I]). AG-UI uses =STATE_DELTA= JSON Patch. The open-ended systems regenerate whole files (websim, make real, Imagine).
 - [O] *Data is kept apart from structure.* Tool results go into a data model or =structuredContent=, and the UI binds to them: A2UI paths, json-render =$state=, MCP Apps tool-result notifications, AI SDK =part.output=, Adaptive Cards templates.
 - [O] *Safety follows representation.* Declarative systems are "data, not code", validated against a catalogue or schema (A2UI, json-render). Open-ended systems rely on a sandboxed iframe plus CSP (MCP Apps, Artifacts, make real).
 - [I] *Layering.* A UI format (A2UI, json-render, HTML) is carried over a transport (AG-UI events, MCP, A2A). These choices are independent.
@@ -152,21 +228,19 @@ Abbreviations. Emits: what the model outputs. Cat.: component catalogue. Edits: 
 
 My evaluation, not evidence.
 
-- *Open question "what does the assistant manipulate".* The prior art points to a structured page description: a flat id-keyed component map plus a data model, rendered by a fixed catalogue. It does not point to raw DOM. That is the shape A2UI and json-render converged on independently. It gives R1 cheap incremental edits (upsert by id, JSON Patch) and a simple safety story, and it persists as one JSON document. Persistence matters for the open question on who sees changes.
+- *Open question "what does the assistant manipulate"* (now decided: the page spec). The prior art points to a structured page description: a flat id-keyed component map plus a data model, rendered by a fixed catalogue. It does not point to raw DOM. That is the shape A2UI and json-render converged on independently. It gives R1 cheap incremental edits (upsert by id, JSON Patch) and a simple safety story, and it is one JSON document that the browser holds for the visit.
 - *R2 (fetch data, choose a display).* Keep tool results in a data model and have the model emit only bindings plus a choice of catalogue component (chart, table, card). Every declarative system does this, and it keeps API payloads out of the model's UI output.
-- *Simplest thing that works (R4).* Do not adopt a whole protocol stack at first. Two options:
-  - Take json-render as a library: React, Apache-2.0, a Zod catalogue, and a ready =catalog.prompt()=.
-  - Copy A2UI's four-message shape as our own tool schema (=create_surface=, =update_components=, =update_data=, =delete=) and render it with a small React registry.
-  AG-UI, MCP Apps and A2A solve interoperation between hosts and agents, which we do not need for one site and one assistant.
-- *Escape hatch.* For things the catalogue cannot express, an "HTML block" component rendered in a sandboxed iframe (the Artifacts / MCP Apps model) contains the risk without making raw HTML the main representation.
+- *Simplest thing that works (R4).* Do not adopt a whole protocol stack at first. See [[*A2UI vs json-render as our page spec][A2UI vs json-render as our page spec]]: our own minimal spec in json-render's shape, edited through A2UI-style tools, rendered by a small React registry, with =@json-render/react= in reserve. AG-UI, MCP Apps and A2A solve interoperation between hosts and agents, which we do not need for one site and one assistant.
+- *Escape hatch.* Ruled out for now by the brief (no custom-HTML component). If it is ever reopened, an "HTML block" component in a sandboxed iframe (the Artifacts / MCP Apps model) would contain the risk without making raw HTML the main representation.
 - *HTMX (E1).* The declarative spec is renderer-agnostic, so the server could render it to HTML fragments for HTMX just as React renders it client-side. The representation choice comes before the stack choice.
 
 * Leads
 
-- Probe: does re-sending an A2UI component id replace or merge? The spec is silent; check the A2UI React renderer source.
-- Probe: confirm json-render's patch, merge and diff edit modes and the version that added them, from the repo changelog (the claim is third-party). Test whether a model can reliably emit RFC 6902 patches against a 30-element spec.
-- Probe: could a 1-day spike render A2UI v0.9 messages through the =@a2ui= React package without any A2A/AG-UI transport, fed directly from our own tool calls?
-- Thread: token cost and error rate of JSON spec vs OpenUI Lang vs raw HTML for the same edits. Thesys's 67% claim is unverified.
+- +Probe: does re-sending an A2UI component id replace or merge?+ Answered 2026-10-28: it replaces the props (=@a2ui/web_core= =applyComponentUpdate=).
+- +Probe: confirm json-render's patch, merge and diff edit modes and the version that added them.+ Answered 2026-10-28: =@json-render/core= 0.14.0. Still open: test whether a model can reliably emit RFC 6902 patches against a 30-element spec, compared with coarse upsert/remove tools.
+- Probe: could a 1-day spike render A2UI v0.9.1 messages through =@a2ui/react= (=<A2UISurface>=) without any A2A/AG-UI transport, fed directly from our own tool calls? This is lower priority now that the recommendation is our own spec.
+- Probe: a 1-day spike of the recommended own spec. Zod catalogue → tool schemas; =upsert_components=, =remove_component=, =set_data=, =read_page=; a React registry of 5 components; measure edit success over 20 scripted requests.
+- Thread: token cost and error rate of JSON spec vs OpenUI Lang vs raw HTML for the same edits. Thesys's 67% / 3x claims are vendor benchmarks and unverified.
 - Thread: how does the model "see" the current page for the next edit: the full spec in context, a summary, or a read-page tool? None of the sources read covered this.
-- Probe: re-fetch the blocked primary docs (a2ui.org, ai-sdk.dev, developers.openai.com, mcpui.dev, docs.thesys.dev) once the network allowlist permits, to upgrade the [I] rows.
+- +Probe: re-fetch the blocked primary docs.+ Done 2026-10-28 (see * Method).
 - Thread: Imagine with Claude showed instability when regenerating per interaction. Is there a write-up of why, and does a declarative layer fix it?
