@@ -27,10 +27,10 @@ An experiment (user, 2026-10-28): to learn how well an agent can reshape a page 
 
 - *R1. The site starts as a skeleton and the assistant reshapes it.* A visitor asks in chat for a section, layout or content change and sees it appear on their page without a reload or a developer; the change lasts for that visit only.
 - *R2. The assistant fetches data and chooses how to show it.* Asked for e.g. "the weather for my city as a chart", it calls an API on the owner's allowlist, reads the result and renders a display the visitor can then refine in conversation. Adding a source means adding a host (and secret) to the list, not writing code.
-- *R6. A data-capable component catalogue.* About ten components (heading, text, image, card, list, row/column container, table, chart, key-figure tile, form/button) so requests like "chart this" or "show as a table" work.
+- *R6. A data-capable component catalog.* About ten components (heading, text, image, card, list, row/column container, table, chart, key-figure tile, form/button) so requests like "chart this" or "show as a table" work.
 - *R3. A core agent loop.* Chat in, model call, tool calls executed, results fed back, until the model stops; with explicit states the UI can show.
 - *R5. Visitors need nothing but a browser.* The site owner's small server supplies the Claude key and the data-API secrets; it stores no page or conversation.
-- *R4. Simplest stack that does the job, renderer swappable.* One build: React (or Preact) draws the page spec through a fixed component catalogue. The page spec and the tools do not depend on the renderer, so a second renderer could be added without changing them.
+- *R4. Simplest stack that does the job, renderer swappable.* One build: React (or Preact) draws the page spec through a fixed component catalog. The page spec and the tools do not depend on the renderer, so a second renderer could be added without changing them.
 
 * Non-goals
 
@@ -46,19 +46,19 @@ An experiment (user, 2026-10-28): to learn how well an agent can reshape a page 
 |       Date | Decision |
 |------------+----------|
 | 2026-10-28 | Changes are seen only by the visitor who made them, and are gone on reload. No server-side page store. |
-| 2026-10-28 | The assistant edits the page spec only, over a fixed component catalogue; no raw HTML and no custom-HTML escape hatch for now. |
+| 2026-10-28 | The assistant edits the page spec only, over a fixed component catalog; no raw HTML and no custom-HTML escape hatch for now. |
 | 2026-10-28 | The site owner supplies the Claude API key through a small stateless server, which also makes the data API calls with their secrets. Visitors bring no key. |
 | 2026-10-28 | Data comes through one generic fetch tool on the server, limited to an owner-maintained allowlist of hosts; the server injects per-host secrets and trims large responses. Dedicated per-source tools may be added later. |
 | 2026-10-28 | The purpose is an experiment: learn how well an agent reshapes a page and what is hard. Not a product or a personal tool. |
 | 2026-10-28 | "Working" is judged by open-ended play, not a fixed scripted test set. |
 | 2026-10-28 | Build once, on React (or Preact), with the page spec and tools kept separate from the renderer so a second renderer (e.g. HTMX/Datastar) can be added later. Pending the revised E1 cost comparison. |
-| 2026-10-28 | The first component catalogue is data-capable, about 10 components: heading, text, image, card, list, layout container (row/column), table, chart (line/bar/pie), key-figure tile, form/button. More can be added later. |
+| 2026-10-28 | The first component catalog is data-capable, about 10 components: heading, text, image, card, list, layout container (row/column), table, chart (line/bar/pie), key-figure tile, form/button. More can be added later. |
 
 * Terms
 
 - *page spec* (agreed 2026-10-28): the structured JSON description of the current page, a list of components with ids plus the data they show; the assistant edits it and the page is drawn from it. Example: "the assistant added a chart to the page spec." Avoid: DOM, layout, schema.
 
-- *component catalogue* (proposed 2026-10-28, not yet agreed): the fixed list of component types the page knows how to draw (e.g. chart, table); the page spec may only use types from it. Avoid: widget library, design system.
+- *component catalog* (agreed 2026-10-28): the fixed list of component types the page knows how to draw (e.g. chart, table, card); the page spec may only use types from it. Example: "add a map component to the catalog so the assistant can show locations." Avoid: widget library, design system, component catalog (spelling).
 
 * Assumptions
 
@@ -84,7 +84,7 @@ Not critical: picks the demo, not the design. Asked 2026-10-28 with the allowlis
 Descriptive; each line cites its evidence file.
 
 - *What the agent emits matters more than the framework.* A flat JSON page spec over a fixed set of allowed components can be edited one section at a time, is XSS-safe (the model writes no markup) and persists as plain JSON; Vercel json-render and Google A2UI standardise such specs with renderers for React, Lit, Svelte and others (E1).
-- *Two independent declarative specs converged on one shape.* Google A2UI and Vercel json-render (both Apache-2.0): a flat list of components keyed by id, a separate data model bound by path, a client-owned component catalogue, edits as upserts or JSON patches. A2UI's four messages (create surface, update components, update data, delete surface) could serve as the tool schema (E2).
+- *Two independent declarative specs converged on one shape.* Google A2UI and Vercel json-render (both Apache-2.0): a flat list of components keyed by id, a separate data model bound by path, a client-owned component catalog, edits as upserts or JSON patches. A2UI's four messages (create surface, update components, update data, delete surface) could serve as the tool schema (E2).
 - *Own minimal page spec in json-render's shape, A2UI-style tools.* A2UI's messages nearly fit as tools, but re-sending an id replaces props rather than merging, it has no remove-component message, v1.0 renames binding keys and its React renderer does not yet support 1.0. E2 (opinion) recommends defining our own small spec shaped like json-render, edited by upsert-by-id, remove and set-data tools. Thesys C1 is archived in favour of OpenUI (E2, revised).
 - *Most other prior art either embeds widgets in chat or regenerates whole HTML.* AI SDK, MCP Apps and OpenAI Apps SDK put prebuilt widgets in chat messages; Artifacts, websim and tldraw make-real regenerate full HTML in a sandboxed iframe; only the latter reshape a whole page. Several of those rows rest on search snippets (E2).
 - *HTMX-style is viable only with a stateful server-side loop.* htmx 4 (via its bundled =hx-sse= extension) or Datastar can render fragments from the page spec on the server and stream them over SSE, but the server must then hold each visitor's page spec in memory, which conflicts with the stateless key-holding server decided on; Datastar's documented risk is =data-*= expressions running as JavaScript (E1, revised from primary sources).
