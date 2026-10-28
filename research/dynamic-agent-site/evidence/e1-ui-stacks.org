@@ -1,0 +1,140 @@
+#+TITLE: E1: How front-end stacks let an agent change a live page
+#+OPTIONS: ^:{} -:nil
+
+* Question
+
+How do candidate front-end stacks let an LLM agent change a live page's structure and content at runtime, and what does each cost? Serves brief goals R1 (skeleton reshaped from chat) and R4 (simplest stack), and the open question "raw DOM/HTML, or a structured page description".
+
+* Method
+
+- [O] One pass on 2026-10-28: about 14 web searches and fetches.
+- [O] Fetched directly from GitHub: the htmx =hx-swap-oob= doc source ([[https://github.com/bigskysoftware/htmx/blob/master/www/content/attributes/hx-swap-oob.md][bigskysoftware/htmx]]), the [[https://github.com/starfederation/datastar][starfederation/datastar]] README, the [[https://github.com/vercel-labs/json-render][vercel-labs/json-render]] README and the [[https://github.com/google/A2UI][google/A2UI]] README.
+- [O] *Could not fetch* (DNS blocked in this session): htmx.org, four.htmx.org, data-star.dev, lit.dev, alpinejs.dev and ai-sdk.dev. Facts about those come from search-result summaries of the pages, which is weaker than reading them. Those bullets are marked [O] only where a summary quoted the official page; the cell or bullet says so.
+- [I] Facets I already know well (React reconciliation, Shadow DOM, Svelte's compile step, DOMPurify) are marked [I] where no source was read this pass.
+
+* Findings
+
+** Comparison
+
+Key: "spec" means a JSON page description; "frag" means an HTML fragment. All rows are [I] summaries of the subsections below, which carry the [O] marks and the sources.
+
+| Subject                                 | Agent emits                                      | How a change reaches the page                         | State lives / persists                                  | Streaming                                     | Incremental edit                                 | Safety                                                     | Generated interactivity                                            | Build              | Small-team complexity |
+|-----------------------------------------+--------------------------------------------------+-------------------------------------------------------+---------------------------------------------------------+-----------------------------------------------+--------------------------------------------------+------------------------------------------------------------+--------------------------------------------------------------------+--------------------+-----------------------|
+| React + spec + registry                 | JSON spec (flat id map)                          | Tool result sets state; React re-renders              | Client store; persist spec JSON anywhere                | Yes (partial JSON / patches)                  | Patch one node by id                             | Strong: only registered components render                  | Full: registry holds charts, forms                                 | Vite/Next          | Medium                |
+| React + generated JSX                   | Component code                                   | Transpile in browser (Sucrase), eval, mount           | Code string; persist the source                         | Only once code is whole                       | Usually regenerate the component                 | Weak in-page; needs iframe sandbox                         | Unlimited                                                          | Vite + transpiler  | Medium-high           |
+| HTMX (2 / 4)                            | HTML frags, server-rendered                      | Response or SSE swap; =hx-swap-oob= / =hx-partial=    | Server holds page; persists naturally                   | SSE extension; v4 streams fetch               | Swap one element by id                           | Server must sanitise or template                           | Needs extra JS (chart lib, Alpine) re-initialised after swap       | None               | Low (needs a server)  |
+| Datastar                                | HTML frags + signal patches over SSE             | =datastar-patch-elements= morphs by id                | Server-driven; signals on client                        | Native (SSE is the protocol)                  | Morph by id; modes inner/append/remove           | Server must sanitise                                       | Signals for local state; charts need JS                            | None               | Low-medium            |
+| Vanilla DOM / Web Components            | HTML or DOM ops (or tag names of own elements)   | Tool handler calls =setHTML= / =replaceWith=          | The DOM itself; serialise or keep a parallel model      | Hand-rolled                                   | Replace by id/selector                           | Sanitiser API (Firefox only) or DOMPurify                  | Custom elements self-initialise on insert                          | None               | Low start, grows      |
+| Alpine.js                               | HTML with =x-= attributes                        | Inserted HTML auto-initialises (MutationObserver)     | DOM + =x-data=; no persistence                          | No; pair with HTMX/SSE                        | Replace a fragment                               | Expressions in attrs are code: XSS = script                | Small widgets, forms                                               | None               | Low                   |
+| Lit                                     | Spec (render to Lit templates) or HTML           | Element property set; Lit re-renders                  | Element properties; persist spec                        | Via host code                                 | Per-element                                      | Templates escape values; =unsafeHTML= is the hole          | Full via own elements                                              | Optional           | Low-medium            |
+| Svelte 5                                | Spec, or .svelte source compiled                 | Spec: reactive state; code: compile then =mount()=    | Runes state; persist spec or source                     | Via host code                                 | Spec: per node; code: regenerate                 | Spec strong; code needs sandbox                            | Full                                                               | Vite + compiler    | Medium                |
+| Preact + signals                        | Spec                                             | Write to a signal; only readers update                | Signals; persist spec                                   | Good fit: partial spec into signals           | Fine-grained, per node                           | Same as React spec                                         | Full                                                               | Vite or buildless  | Low-medium            |
+| Spec protocols (json-render, A2UI)      | Standard JSON spec + data model                  | Renderer library for the chosen framework             | Spec + data model; persist JSON                         | Yes, by design                                | Flat ids allow small patches                     | Catalog-only; "data, not code"                             | Catalog plus actions and data binding                              | Framework's        | Low-medium            |
+| Sandboxed iframe (MCP Apps / artifacts) | Whole HTML+JS doc                                | =srcdoc= into sandboxed iframe; postMessage bridge    | Inside iframe; persist the document                     | Replace whole doc                             | Regenerate the doc                               | Strong isolation, weak control                             | Unlimited inside the frame                                         | None               | Low-medium            |
+
+** React with a JSON page tree and a component registry
+
+- [I] The agent's tool emits a JSON description (type, props, children) and a fixed registry maps =type= to a React component; unknown types are ignored. The model never writes markup or code.
+- [O] Vercel's json-render is a ready-made version: =defineCatalog(schema, { components, actions })= with a zod =props= schema per component; =catalog.prompt()= produces the system prompt; the spec is a flat map, =root= plus =elements= keyed by id, each with =type=, =props=, =children= (array of ids). [[https://github.com/vercel-labs/json-render][json-render README]]
+- [O] json-render streams through =createSpecStreamCompiler()= with =push(chunk)= returning =newPatches=; bindings include =$state=, =$bindState= (two-way for inputs), =$cond=, =$computed=; components fire catalog actions via =emit()= and a built-in =setState= action. [[https://github.com/vercel-labs/json-render][json-render README]]
+- [O] Third-party guides describe its wire format as JSON Patch (RFC 6902) over JSONL; not confirmed in the README. [[https://orchestkit.vercel.app/docs/reference/skills/json-render-catalog][OrchestKit guide]], [[https://infoq.com/news/2026/03/vercel-json-render][InfoQ, 2026-03]]
+- [O] Vercel's earlier React route, AI SDK RSC (=streamUI=, server components streamed from tool calls), has paused development; its migration guide lists quadratic data transfer and remount flicker and recommends AI SDK UI (=useChat= with tools rendered by client components). Read via search summary; ai-sdk.dev not fetchable. [[https://ai-sdk.dev/docs/ai-sdk-rsc/migrating-to-ui][Migrating from RSC to UI]]
+- [I] Persistence is trivial: the page is a JSON document, so storing it per session, per user or for a shared site (brief open question 1) is a database row.
+- [I] Edits are cheap and targeted: "change the chart to a bar chart" becomes a props patch on one id, with no regeneration.
+- [I] Cost: someone must build and maintain the registry. The page can only contain what the registry allows, and a new kind of display needs a developer.
+
+** React with model-generated JSX compiled at runtime
+
+- [O] react-live and react-runner transpile a code string with Sucrase and render it in-page; the only limit on what the code can reach is a =scope= object of allowed globals. No iframe isolation is documented. [[https://npmjs.com/package/react-runner][react-runner]], [[https://commerce.nearform.com/open-source/react-live/docs/installation][react-live docs]]
+- [I] Running the code in the page gives it full access to the page (cookies, the chat, API tokens in memory). It is safe only inside a sandboxed iframe, which turns this into the iframe pattern below.
+- [I] Most expressive option (any chart, any form); hardest to edit incrementally, since an edit means the model rewrites the component and may break code that worked.
+
+** HTMX
+
+- [O] =hx-swap-oob= lets one response update elements other than the target: =true= or =outerHTML= replaces the element with the same id; =beforeend:#list= etc. target a selector. Table rows and SVG children need a =<template>= wrapper; =htmx.config.allowNestedOobSwaps= controls nested oob. [[https://github.com/bigskysoftware/htmx/blob/master/www/content/attributes/hx-swap-oob.md][hx-swap-oob doc source]]
+- [O] htmx 4.0.0 shipped 2026-08-28. It is on npm's =next= tag until early 2027, with htmx 2 still on =latest=. It moves to =fetch()= with streamed responses and adds =hx-partial= (one response, many targets, each with its own swap). Idiomorph is now in core as =innerMorph= / =outerMorph= swaps, which are opt-in. Read via search summaries and secondary coverage; four.htmx.org not fetchable. [[https://www.infoq.com/news/2026/09/htmx-4-released/][InfoQ 2026-09]], [[https://four.htmx.org/htmx-4][Changes in htmx 4.0]]
+- [O] Whether SSE moved into htmx 4 core or stays an extension: sources conflict. [[https://four.htmx.org/htmx-4][Changes page]] vs [[https://four.htmx.org/announcements/2026-08-28-htmx-4.0.0-is-released][release announcement]]
+- [I] Fit: the agent loop runs on the server, which keeps page state as server-side HTML or templates. Each tool call renders a fragment that is pushed to the browser over SSE as an oob swap. Page state and persistence come free on the server; the browser holds almost nothing.
+- [I] Raw model HTML passed straight through is an XSS hole. The safe variant has the model call server templates (a server-side component registry), which is the JSON-spec pattern with HTML on the wire.
+- [I] Interactive charts need a JS library initialised on swapped-in content (an =htmx:afterSwap= handler or a custom element). Forms are native and strong.
+
+** Datastar
+
+- [O] One script tag (11.89 KiB, README badge v1.0.4) with =data-*= attributes (=data-bind=, =data-text=, =data-on:click= with =@post()=); backend SDKs live in the repo. [[https://github.com/starfederation/datastar][datastar README]]
+- [O] SSE events are =datastar-patch-elements= and =datastar-patch-signals=. Patch-elements morphs top-level elements matched by id; its modes are =outer= (default), =inner=, =replace=, =prepend=, =append=, =before=, =after= and =remove=, plus an optional =selector=. Only outer and inner morph and so preserve DOM state. HTML is written verbatim, so the sender must sanitise. Read via search summary of the SSE reference and the SDK ADR; data-star.dev not fetchable. [[https://data-star.dev/reference/sse_events][SSE events]], [[https://cdn.jsdelivr.net/gh/starfederation/datastar@1.0.2/sdk/ADR.md][SDK ADR]]
+- [I] Closest of all subjects to "server-side agent streams page edits": SSE is the protocol itself rather than an add-on, and morphing keeps focus and input values while sections change.
+- [I] Smaller community than HTMX (about 5.2k GitHub stars).
+
+** Vanilla DOM / Web Components
+
+- [I] The simplest possible design: tools like =set_section(id, html)=, =remove_section(id)= and =insert_after(id, html)= run in the browser against the skeleton's DOM. It needs no framework, but the DOM becomes the only copy of page state; to persist it you must serialise =innerHTML= or keep a parallel model.
+- [O] The safe HTML insert =Element.setHTML()= (Sanitizer API) shipped in Firefox 148 (2026-02-24). Chrome status is conflicting and Safari has none, so it is not Baseline. The advice is to feature-detect and fall back to DOMPurify; =setHTMLUnsafe()= is everywhere but does not sanitise. [[https://web-platform-dx.github.io/web-features-explorer/features/sanitizer/][web-features: Sanitizer]]
+- [I] Web Components are the middle ground. The model emits =<agent-chart data-src="...">=; the browser upgrades known tags on insert, so interactivity comes from a fixed set of custom elements. A sanitiser allowlist of those tags gives a registry without a framework.
+
+** Alpine.js
+
+- [O] After start-up Alpine watches the DOM with a MutationObserver and initialises directives on inserted nodes, so agent-inserted HTML with =x-data= comes alive without extra calls. [[https://www.bennadel.com/blog/4605-exploring-dom-mutation-observation-in-alpine-js-3-13-5.htm][Ben Nadel, Alpine 3.13.5]]
+- [O] The CSP build forbids inline mutations (e.g. =open = !open=) and passing arguments to methods; logic must move into registered components. [[https://docs.hyva.io/hyva-themes/writing-code/csp/alpine-csp-property-mutation.html][Hyva docs]]. alpinejs.dev not fetchable.
+- [I] Alpine directives are JavaScript expressions, so model-written Alpine markup is model-written code. Use the CSP build, with only registered =Alpine.data= components the model may reference, or strip =x-= / =@= attributes.
+- [I] Usually a companion to HTMX or vanilla DOM rather than a page-state model of its own.
+
+** Lit
+
+- [O] Only strings in Lit's tagged template literals are parsed as HTML; interpolated values are text. =unsafeHTML= must take only developer-controlled strings. Read via a lit.dev docs PR diff; lit.dev not fetchable. [[https://github.com/lit/lit.dev/pull/1347/files][lit.dev PR 1347]]
+- [O] A2UI ships a Lit renderer (npm), so Lit is a supported target for a standard JSON spec. [[https://github.com/google/A2UI][A2UI README]]
+- [I] Good substrate for the Web Components registry above: each registry entry is a Lit element and the spec renders to tags. No build step is required.
+
+** Svelte 5
+
+- [O] Components can be compiled from source text at runtime (=svelte-runtime-components=), though its example compiles on the server and dynamic-imports the output; =mount()= is the Svelte 5 entry point. [[https://sveltethemes.dev/MrGentle/svelte-runtime-components][svelte-runtime-components]]
+- [O] json-render has a Svelte renderer and shadcn-svelte components. [[https://github.com/vercel-labs/json-render][json-render README]]
+- [I] Same two choices as React (spec or code) with the same trade-off. Its compiler gives no special edge for agent-driven pages; the runtime-code route also needs the compiler at runtime and a sandbox.
+
+** Preact + signals
+
+- [O] A signal passed through the tree updates only the components that read its value, without re-rendering the components it passed through. [[https://preactjs.com/blog/introducing-signals/][Introducing Signals]]
+- [I] Fits a streamed, patched spec well: one signal per node id, so a patch to one node touches one component. About 4 KB plus signals; can run buildless with =htm=.
+- [I] No ready-made spec renderer found this pass (json-render lists React, Vue, Svelte and Solid, not Preact; =preact/compat= may cover React's).
+
+** Added: declarative spec protocols (json-render, A2UI)
+
+Added because they standardise the "structured page description" side of the brief's open question across frameworks, so the choice of spec is separate from the choice of framework.
+
+- [O] A2UI: the agent sends JSON components as a flat list referencing each other by id, plus a data model. The client renders only from its catalog of pre-approved components ("safe like data, but expressive like code"). It ships renderers for Lit, Angular and React (npm), with Flutter and SwiftUI in progress; v0.9.1 is current and v1.0 is a release candidate. It describes itself as early-stage. [[https://github.com/google/A2UI][google/A2UI]]
+- [O] A2UI is transport-agnostic (SSE, WebSockets, A2A, AG-UI). From a search summary. [[https://landscape.jimmysong.io/projects/a2ui/][landscape entry]]
+- [O] json-render covers React, Vue, Svelte, Solid, React Native and more under Apache-2.0, launched 2026-01. [[https://infoq.com/news/2026/03/vercel-json-render][InfoQ]]
+
+** Added: sandboxed iframe (MCP Apps / artifact pattern)
+
+Added because it is the only safe home for model-written HTML+JS, which is what the "generated JSX" and "raw HTML with scripts" routes produce.
+
+- [O] MCP Apps (SEP-1865, Final; stable around 2026-01-26) has tools reference =ui://= HTML resources that the host renders in a mandatory sandboxed iframe, talking JSON-RPC over postMessage; MIME type =text/html;profile=mcp-app=. Read via search summaries. [[https://modelcontextprotocol.io/seps/1865-mcp-apps-interactive-user-interfaces-for-mcp][SEP-1865]]
+- [I] The site would hold one or more frames per section. Edits regenerate a whole frame document, and the frame cannot share styles or state with the page except through messages.
+
+* Patterns
+
+- [I] *Two families of what the agent emits.* Markup or code (HTMX, Datastar, vanilla, Alpine, generated JSX/Svelte, iframe) versus a JSON spec against a catalog (React/Preact/Lit/Svelte + registry, json-render, A2UI). Every stack can be driven either way; the choice between the families, not the framework, sets the safety and editing story.
+- [I] *Stable ids are the shared edit primitive.* hx-swap-oob (by id), Datastar patch-elements (morph by id), json-render's =elements= map and A2UI's flat list all address sections by id. Incremental edits work wherever the agent can name a section.
+- [I] *A server-held page goes with the hypermedia stacks.* HTMX and Datastar assume the agent loop and page state live on the server, so persistence and API secrets come free. Client stacks (React, Preact, Lit, Svelte, vanilla) keep state in the browser and need a store for anything beyond one session.
+- [I] *A catalog is the safety line.* Safe designs have the renderer, not the model, own the markup: a component registry (React/Lit/Svelte/Preact), a server template set (HTMX/Datastar done safely), or an allowlist of custom elements (vanilla). Designs without a catalog fall back to sanitising (=setHTML=, DOMPurify) or iframes.
+- [I] *Rich generated interactivity comes from prebuilt pieces or a sandbox.* Charts reach the page either as a prebuilt component or custom element (registry stacks, Web Components, Lit) or as code in an iframe. The HTML-fragment stacks need a JS island for charts.
+
+* Bearing on the design (opinion)
+
+This section is my evaluation, not observation.
+
+- [I] *Open question "raw DOM/HTML or structured description":* I lean towards a structured description: a flat, id-keyed JSON page spec rendered from a small catalog. It answers R1 (patch one section by id), R2 (a =Chart= catalog entry takes fetched data, and "make it a bar chart" is a props patch), safety (no model-written markup) and persistence (store the JSON) at once. Model-written HTML is worth keeping only as a sandboxed-iframe escape hatch for one-off displays the catalog cannot express.
+- [I] *R4, simplest stack:* React is not required for this. The spec plus catalog is the real design; the renderer can be React (most ready-made: json-render, A2UI), Preact+signals or Lit (smaller, buildless) at similar effort. React is the lowest-risk default because json-render and A2UI both support it.
+- [I] *HTMX/Datastar are a real alternative if the agent loop runs on the server* (open question 3). The server holds the spec, renders fragments with its own templates, and streams them over SSE (Datastar natively, htmx 4 via streaming). The client then has almost no code. The cost is that charts need a JS island, and the server must render the catalog. This is the "major departure" that best fits "simpler is better"; Datastar suits streamed agent edits better than HTMX 2.
+- [I] *Avoid as the main mechanism:* in-page runtime JSX/Svelte compilation (unsafe without an iframe, brittle to edit) and raw =innerHTML= from the model.
+
+* Leads
+
+- Probe: build the same three-step chat ("add a hero", "add a weather chart for Paris", "make it a bar chart") on (a) React + json-render and (b) Datastar + server templates; compare lines of code, latency and edit reliability.
+- Thread: what spec should the agent's tools take: whole-spec replace, JSON Patch (RFC 6902) or bespoke ops (=add_section=, =update_props=)? Which do models get right most reliably?
+- Thread: is A2UI (v1.0 RC) or json-render's spec stable enough to adopt as the page format, or should we own a minimal schema?
+- Lead: confirm htmx 4 SSE placement (core vs extension) and streaming-fetch behaviour on four.htmx.org once the domain is allowed.
+- Lead: read data-star.dev, lit.dev, alpinejs.dev and ai-sdk.dev directly (blocked this pass) to upgrade the summary-based bullets.
+- Thread: chart rendering inside the HTML-fragment stacks: a custom element (=<agent-chart>=) versus an Alpine component versus a Datastar signal-driven island.
+- Lead: does Preact work with json-render's React renderer via =preact/compat=?
+- Thread: how much of the catalog can the model extend at runtime (e.g. sandboxed custom components promoted into the catalog) without losing the safety line?

