@@ -1,0 +1,41 @@
+# Orchestrator overlay (overlay.md). Written by `state.py home init`; edited by hand.
+# `state.py where` warns when a key here drifts from the skill's schema.
+overlay-version: 1
+project: dynamic_ai_ui
+language: typescript
+
+# No repos: or code-root: — this directory is the repository and the home (overlay.md § Repositories).
+
+build:
+  # pre-commit: ./bin/tangle-org.sh   # OPTIONAL, run in the worktree before each commit
+test:
+  command: npx vitest run --reporter=junit --passWithNoTests
+  parser: junit-xml   # emacs-results-txt | exit-code | junit-xml | tap
+  compare: python3 ~/.claude/skills/orchestrate/scripts/compare.py --parser junit-xml
+  pending-style: it.fails   # Vitest: reported as expected-to-fail; fails once the behaviour works, so promotion is dropping .fails
+
+# Where worktrees go, from the home (overlay.md § Worktrees). The pattern is the workspace's convention.
+worktrees:
+  parent: .worktrees
+  pattern: <branch>
+
+worktree:
+  # init: ./bin/init-worktree-runtime.sh   # OPTIONAL, run inside a new worktree
+  # needs-submodules: false
+
+# OPTIONAL blocks, as overlay.md gives them: artifacts, taxonomy, thresholds, critical-path,
+# architect (drift-hotspots), reviewer (checks), asks (reader), priors.
+# taxonomy:
+#   - feature
+#   - test
+#   - doc
+#   - refactor
+#   - bug
+#   - contract
+#   - infrastructure
+# architect:
+#   drift-hotspots:
+#     - <module>: <what to watch>
+# reviewer:
+#   checks:
+#     - <check>

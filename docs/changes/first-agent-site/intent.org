@@ -1,6 +1,7 @@
 #+TITLE: first-agent-site
 #+OPTIONS: ^:{} -:nil
 #+STATUS: speculated
+#+BASE: 0d4b75e4693b79454dbea8d587f27e3a0dab6247
 #+APPROVED: 2026-10-28 by the user, in the research hand-off review
 
 * Why
