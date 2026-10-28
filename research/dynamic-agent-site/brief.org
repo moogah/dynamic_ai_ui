@@ -79,6 +79,9 @@ Partly closed 2026-10-28 in * Decided: an owner-run server holds the key and mak
 ** Which data sources should the first test use?
 Not critical: picks the demo, not the design. Asked 2026-10-28 with the allowlist question; no answer yet.
 
+** Adopt json-render/A2UI, or define our own minimal page spec in their shape?
+Not critical: does not change a goal; E2 recommends our own minimal spec in json-render's shape with A2UI-style tools. Left to the design round.
+
 * What the evidence shows so far
 
 Descriptive; each line cites its evidence file.
