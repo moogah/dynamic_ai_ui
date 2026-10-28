@@ -21,7 +21,7 @@ The assistant will also need to have tools for making API calls to gather data, 
 
 * Purpose
 
-An experiment (user, 2026-10-28): to learn how well an agent can reshape a page and which stack suits it. Done when the user has seen it work and knows what is hard about it; rough edges are acceptable.
+An experiment (user, 2026-10-28): to learn how well an agent can reshape a page and which stack suits it. Done when the user has seen it work and knows what is hard about it; rough edges are acceptable. Judged by open-ended play, not a scripted test set.
 
 * Goals (speculated)
 
@@ -33,6 +33,7 @@ An experiment (user, 2026-10-28): to learn how well an agent can reshape a page 
 
 * Non-goals
 
+- A fixed acceptance suite of scripted conversations (2026-10-28: judged by open-ended play).
 - Product concerns: multi-tenant use, cost controls and abuse protection for public visitors, polish, docs for other site owners (2026-10-28: the purpose is an experiment).
 - Fetching from arbitrary URLs outside the owner's allowlist (2026-10-28).
 - Letting the assistant write raw HTML or scripts into the page (2026-10-28: it edits the page spec only).
@@ -47,6 +48,7 @@ An experiment (user, 2026-10-28): to learn how well an agent can reshape a page 
 | 2026-10-28 | The site owner supplies the Claude API key through a small stateless server, which also makes the data API calls with their secrets. Visitors bring no key. |
 | 2026-10-28 | Data comes through one generic fetch tool on the server, limited to an owner-maintained allowlist of hosts; the server injects per-host secrets and trims large responses. Dedicated per-source tools may be added later. |
 | 2026-10-28 | The purpose is an experiment: learn how well an agent reshapes a page and what is hard. Not a product or a personal tool. |
+| 2026-10-28 | "Working" is judged by open-ended play, not a fixed scripted test set. |
 
 * Terms
 
