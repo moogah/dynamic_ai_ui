@@ -27,11 +27,11 @@ An experiment (user, 2026-10-28): to learn how well an agent can reshape a page 
 
 - *R1. The site starts as a skeleton and the assistant reshapes it.* A visitor asks in chat for a section, layout or content change and sees it appear on their page without a reload or a developer; the change lasts for that visit only.
 - *R2. The assistant fetches data and chooses how to show it.* Asked for e.g. "the weather for my city as a chart", it calls an API on the owner's allowlist, reads the result and renders a display the visitor can then refine in conversation. Adding a source means adding a host (and secret) to the list, not writing code.
-- *R7. Undo the assistant's last turn.* A button restores the page spec as it was before the assistant's last turn, so mistakes are cheap during play.
-- *R6. A data-capable component catalog.* About ten components (heading, text, image, card, list, row/column container, table, chart, key-figure tile, form/button) so requests like "chart this" or "show as a table" work.
 - *R3. A hand-written core agent loop.* Chat in, model call, tool calls executed, results fed back, until the model stops; with explicit states (idle, calling the model, running tools, awaiting the visitor, error) the UI can show. Written by hand so the mechanics are visible; no agent framework.
-- *R5. Visitors need nothing but a browser.* The site owner's small server supplies the Claude key and the data-API secrets; it stores no page or conversation.
 - *R4. Simplest stack that does the job, renderer swappable.* One build: React (or Preact) draws the page spec through a fixed component catalog. The page spec and the tools do not depend on the renderer, so a second renderer could be added without changing them.
+- *R5. Visitors need nothing but a browser.* The site owner's small server supplies the Claude key and the data-API secrets; it stores no page or conversation.
+- *R6. A data-capable component catalog.* About ten components (heading, text, image, card, list, row/column container, table, chart, key-figure tile, form/button) so requests like "chart this" or "show as a table" work.
+- *R7. Undo the assistant's last turn.* A button restores the page spec as it was before the assistant's last turn, so mistakes are cheap during play.
 
 * Non-goals
 
