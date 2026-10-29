@@ -3,18 +3,14 @@
 // Messages API with its own model, system prompt and tool list, returns only the model's reply,
 // and keeps nothing between requests. Whatever else the page sends is ignored.
 //
-// The fetch tool's route, the allowlist and the data transport (`allowlist`, `fetchData`) are
-// task fetch-tool's (seam/allowlist, seam/fetch-result); the options are taken here so the
-// handler's signature is final.
-import { toolDefinitions } from "../src/agent/tools";
+// It also runs the fetch tool for the page (seam/allowlist, seam/fetch-result, design D3, D8):
+// the page posts a fetch_url input to FETCH_PATH and gets back the whole response and the view
+// the model reads, or a tool error; server/fetchTool.ts does the fetching.
+import { FETCH_PATH, toolDefinitions } from "../src/agent/tools";
 import { SKELETON_IDS } from "../src/page/spec";
+import { fetchForTool, type AllowlistEntry, type FetchLike } from "./fetchTool";
 
-export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
-
-export interface AllowlistEntry {
-  host: string;
-  secret?: { header: string; value: string };
-}
+export type { AllowlistEntry, FetchLike };
 
 export interface AppOptions {
   anthropicApiKey: string;
@@ -59,7 +55,18 @@ export const SYSTEM_PROMPT = [
 ].join("\n");
 
 export function createApp(options: AppOptions): Handler {
-  const { anthropicApiKey, fetchModel } = options;
+  const { anthropicApiKey, fetchModel, allowlist, fetchData } = options;
+
+  async function fetchTool(request: Request): Promise<Response> {
+    let input: unknown;
+    try {
+      input = await request.json();
+    } catch {
+      return problem(400, "the request body must be JSON");
+    }
+    // A tool error is an answer too: the page turns it into the tool result.
+    return Response.json(await fetchForTool(input, { allowlist, fetchData }));
+  }
 
   async function relay(request: Request): Promise<Response> {
     let body: unknown;
@@ -92,6 +99,10 @@ export function createApp(options: AppOptions): Handler {
     if (pathname === MESSAGES_PATH) {
       if (request.method !== "POST") return problem(405, "POST only");
       return relay(request);
+    }
+    if (pathname === FETCH_PATH) {
+      if (request.method !== "POST") return problem(405, "POST only");
+      return fetchTool(request);
     }
     return problem(404, `nothing at ${pathname}`);
   };
