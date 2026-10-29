@@ -82,7 +82,7 @@ describe("the page spec holds no markup", () => {
   });
 
   // seam/page-actions: a button on the page acts by sending a visitor message, as if typed.
-  it.fails("sends a visitor message when the visitor presses a button the assistant drew (Scenario: page-spec § A button sends a visitor message)", async () => {
+  it("sends a visitor message when the visitor presses a button the assistant drew (Scenario: page-spec § A button sends a visitor message)", async () => {
     const model = new FakeModel()
       .reply(toolUse("toolu_1", "put_components", { components: [{ id: "b1", type: "button", parent: "content", props: { label: "Show tomorrow" } }] }))
       .reply(text("Press it when you like."))

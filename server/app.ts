@@ -7,8 +7,9 @@
 // the page posts a fetch_url input to FETCH_PATH and gets back the whole response and the view
 // the model reads, or a tool error; server/fetchTool.ts does the fetching.
 import { FETCH_PATH, toolDefinitions } from "../src/agent/tools";
+import { IMAGE_PATH } from "../src/page/catalog";
 import { SKELETON_IDS } from "../src/page/spec";
-import { fetchForTool, type AllowlistEntry, type FetchLike } from "./fetchTool";
+import { fetchForTool, fetchImage, type AllowlistEntry, type FetchLike } from "./fetchTool";
 
 export type { AllowlistEntry, FetchLike };
 
@@ -68,6 +69,16 @@ export function createApp(options: AppOptions): Handler {
     return Response.json(await fetchForTool(input, { allowlist, fetchData }));
   }
 
+  async function image(request: Request): Promise<Response> {
+    const src = new URL(request.url).searchParams.get("src");
+    if (!src) return problem(400, "an image request needs a 'src'");
+    const outcome = await fetchImage(src, { allowlist, fetchData });
+    if (!outcome.ok) return problem(403, outcome.error);
+    return new Response(outcome.bytes, {
+      headers: { "content-type": outcome.type, "x-content-type-options": "nosniff", "cache-control": "private, max-age=300" },
+    });
+  }
+
   async function relay(request: Request): Promise<Response> {
     let body: unknown;
     try {
@@ -103,6 +114,10 @@ export function createApp(options: AppOptions): Handler {
     if (pathname === FETCH_PATH) {
       if (request.method !== "POST") return problem(405, "POST only");
       return fetchTool(request);
+    }
+    if (pathname === IMAGE_PATH) {
+      if (request.method !== "GET") return problem(405, "GET only");
+      return image(request);
     }
     return problem(404, `nothing at ${pathname}`);
   };
