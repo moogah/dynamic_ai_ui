@@ -75,6 +75,17 @@
       "model": "opus",
       "effort": "high",
       "recorded_at": "2026-10-28T23:36:05Z"
+    },
+    {
+      "task": null,
+      "cycle": "cycle-1793231989",
+      "source": "role-default",
+      "reason": "role default",
+      "agent_id": "abd935a1627d67a47",
+      "role": "phase-plan",
+      "model": "opus",
+      "effort": "medium",
+      "recorded_at": "2026-10-29T00:00:56Z"
     }
   ],
   "journal": [
