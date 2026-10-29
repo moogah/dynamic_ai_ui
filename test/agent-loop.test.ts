@@ -185,3 +185,21 @@ describe("visitors need nothing but a browser", () => {
     for (const name of ["put_components", "remove_component", "set_data", "fetch_url"]) expect(names).toContain(name);
   });
 });
+
+describe("a reply with nothing in it", () => {
+  // Inline fix after the review of site-turn: the conversation is append-only, so an empty
+  // assistant message kept in it makes every later request of the visit invalid.
+  it("does not keep an empty reply in the conversation, so the next turn still works", async () => {
+    const model = new FakeModel().reply().reply(text("Back again."));
+    const site = await openSite({ model });
+
+    site.say("hello");
+    await site.showsState("awaiting the visitor");
+    site.say("are you there?");
+    await site.settled("Back again.");
+
+    const messages: any[] = model.calls[1].body.messages;
+    for (const message of messages.slice(0, -1)) expect(message.content.length).toBeGreaterThan(0);
+    expect(messages.map((m) => m.role)).toEqual(["user"]);
+  });
+});

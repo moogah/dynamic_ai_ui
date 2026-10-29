@@ -164,7 +164,11 @@ function parse(body: string, contentType: string): unknown {
 // is made, any address that is not public. A host given as an address is checked directly,
 // since no lookup happens for it.
 
-const notPublic = new BlockList();
+// Two lists, because Node's BlockList matches an IPv4 address against an IPv6 subnet that
+// covers the mapped range, which would refuse every IPv4 address. An IPv4-mapped IPv6
+// address is refused whole, on the IPv6 list.
+const notPublic4 = new BlockList();
+const notPublic6 = new BlockList();
 for (const [net, prefix] of [
   ["0.0.0.0", 8],
   ["10.0.0.0", 8],
@@ -180,7 +184,7 @@ for (const [net, prefix] of [
   ["203.0.113.0", 24],
   ["224.0.0.0", 3],
 ] as const) {
-  notPublic.addSubnet(net, prefix, "ipv4");
+  notPublic4.addSubnet(net, prefix, "ipv4");
 }
 for (const [net, prefix] of [
   ["::", 128],
@@ -193,13 +197,13 @@ for (const [net, prefix] of [
   ["fe80::", 10],
   ["ff00::", 8],
 ] as const) {
-  notPublic.addSubnet(net, prefix, "ipv6");
+  notPublic6.addSubnet(net, prefix, "ipv6");
 }
 
 export function isPublicAddress(address: string): boolean {
   const family = isIP(address);
   if (family === 0) return false;
-  return !notPublic.check(address, family === 4 ? "ipv4" : "ipv6");
+  return family === 4 ? !notPublic4.check(address, "ipv4") : !notPublic6.check(address, "ipv6");
 }
 
 export class NotPublicAddressError extends Error {

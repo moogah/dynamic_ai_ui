@@ -8,6 +8,7 @@ import type { AddressInfo } from "node:net";
 import { describe, it, expect, afterEach } from "vitest";
 import { waitFor } from "@testing-library/react";
 import { FakeHosts, FakeModel, openSite, closeSite, pause, text, toolUse, resultText, visibleToVisitor } from "./support/site";
+import { load } from "./support/load";
 
 afterEach(closeSite);
 
@@ -210,5 +211,18 @@ describe("large responses are trimmed", () => {
     expect(model.calls).toHaveLength(3);
     for (const call of model.calls) expect(call.raw.length).toBeLessThan(huge.text.length / 2);
     await waitFor(() => expect(site.traffic.some((t) => t.responseBody.length > huge.text.length)).toBe(true));
+  });
+});
+
+describe("the server's own address check", () => {
+  // Inline fix after the owner-server-entry task found every real fetch refused: Node's
+  // BlockList matches an IPv4 address against an IPv6 subnet, so the check ran on the real
+  // BlockList and no fake.
+  it("accepts a public IPv4 address and refuses private, loopback and mapped ones", async () => {
+    const { isPublicAddress } = await load("/server/fetchTool");
+    for (const address of ["8.8.8.8", "188.40.99.226", "2606:4700:4700::1111"]) expect(isPublicAddress(address)).toBe(true);
+    for (const address of ["127.0.0.1", "10.1.2.3", "192.168.0.1", "169.254.169.254", "::1", "fe80::1", "::ffff:127.0.0.1", "::ffff:7f00:1"]) {
+      expect(isPublicAddress(address)).toBe(false);
+    }
   });
 });

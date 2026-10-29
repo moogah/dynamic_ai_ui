@@ -110,7 +110,8 @@ export function createAgentLoop(options: LoopOptions): AgentLoop {
         // A reply arriving for a stopped turn is dropped (seam/stop).
         if (signal.aborted) return;
         const content: ContentBlock[] = Array.isArray(reply.content) ? reply.content : [];
-        conversation.push({ role: "assistant", content });
+        // An empty assistant message would make this and every later request of the visit invalid.
+        if (content.length > 0) conversation.push({ role: "assistant", content });
         for (const block of content) if (isText(block) && block.text) say({ role: "assistant", text: block.text });
         const calls = content.filter(isToolUse);
         if (calls.length === 0) break;
