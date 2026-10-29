@@ -23,10 +23,10 @@ const types: Record<string, string> = {
 
 // A file of the built page, or index.html for the root; nothing outside dist/.
 async function staticFile(pathname: string): Promise<Response> {
-  const relative = pathname === "/" ? "index.html" : decodeURIComponent(pathname).replace(/^\/+/, "");
-  const file = normalize(join(dist, relative));
-  if (!file.startsWith(dist + "/")) return new Response("not found", { status: 404 });
   try {
+    const relative = pathname === "/" ? "index.html" : decodeURIComponent(pathname).replace(/^\/+/, "");
+    const file = normalize(join(dist, relative));
+    if (!file.startsWith(dist + "/")) return new Response("not found", { status: 404 });
     if (!(await stat(file)).isFile()) return new Response("not found", { status: 404 });
     return new Response(await readFile(file), { headers: { "content-type": types[extname(file)] ?? "application/octet-stream" } });
   } catch {
@@ -36,12 +36,18 @@ async function staticFile(pathname: string): Promise<Response> {
 
 const handler = loadHandler(root);
 
-const server = createServer((req, res) => {
-  const origin = `http://${req.headers.host ?? "localhost"}`;
-  const { pathname } = new URL(req.url ?? "/", origin);
+export const server = createServer((req, res) => {
+  // The Host header is the visitor's to write: nothing here is built from it.
+  const origin = "http://localhost";
+  let pathname: string;
+  try {
+    ({ pathname } = new URL(req.url ?? "/", origin));
+  } catch {
+    return void send(res, new Response("bad request", { status: 400 }));
+  }
   if (pathname.startsWith(SERVER_PREFIX)) return void serveWith(handler, req, res, origin);
   if (req.method !== "GET" && req.method !== "HEAD") return void send(res, new Response("GET only", { status: 405 }));
-  void staticFile(pathname).then((response) => send(res, response));
+  void staticFile(pathname).then((response) => send(res, response)).catch(() => send(res, new Response("server error", { status: 500 })).catch(() => res.destroy()));
 });
 
 server.listen(port, () => {

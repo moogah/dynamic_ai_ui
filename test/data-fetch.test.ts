@@ -3,7 +3,7 @@
 // The allowlisted fetch tool on the owner's server, driven through the page a visitor sees
 // (test/support/site.ts). Seams: seam/allowlist, seam/fetch-result, seam/page-snapshot,
 // seam/catalog, seam/renderer (docs/changes/first-agent-site/design.org).
-import { createServer, type Server } from "node:http";
+import { createServer, request as httpRequest, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { describe, it, expect, afterEach } from "vitest";
 import { waitFor } from "@testing-library/react";
@@ -278,6 +278,38 @@ describe("the image route serves only raster images", () => {
     expect(png.headers.get("content-type")).toBe("image/png");
     for (const crafted of ["image/png, text/html", "image/x-foo+xml", "image/svg+xml", "text/html", "image/png\ttext/html"]) {
       expect((await image(crafted, "<script>alert(1)</script>")).status).toBe(403);
+    }
+  });
+});
+
+describe("the owner's Node entry stays up", () => {
+  // Inline fixes after the review of owner-server-entry (findings 2 and 3): one request with a
+  // malformed escape or Host header stopped the whole process. The real entry is started on a
+  // free port and driven with real requests.
+  function ask(port: number, path: string, headers: Record<string, string> = {}): Promise<number> {
+    return new Promise((resolve, reject) => {
+      const req = httpRequest({ host: "127.0.0.1", port, path, headers }, (res) => {
+        res.resume();
+        res.on("end", () => resolve(res.statusCode ?? 0));
+      });
+      req.on("error", reject);
+      req.end();
+    });
+  }
+
+  it("answers a malformed path or Host header and keeps serving", async () => {
+    process.env.ANTHROPIC_API_KEY = "sk-ant-test-entry";
+    process.env.PORT = "0";
+    const { server } = await load("/server/main");
+    if (!server.listening) await new Promise((resolve) => server.once("listening", resolve));
+    const port = (server.address() as AddressInfo).port;
+    try {
+      expect(await ask(port, "/%E0%A4%A")).toBe(404);
+      expect(await ask(port, "/", { Host: "a b" })).toBeLessThan(500);
+      expect(await ask(port, "//")).toBeLessThan(500);
+      expect(await ask(port, "/missing")).toBe(404);
+    } finally {
+      server.close();
     }
   });
 });
