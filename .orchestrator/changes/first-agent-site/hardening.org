@@ -25,14 +25,6 @@ The chat line for each tool call prints the whole tool result, so a fetch puts u
 :END:
 The row's statement holds (refusal at connection time) but its note and the harness's dispatcher branch name a mechanism that is not used. Settle at integrate's conformance check: correct the note, and drop or keep the unused harness branch.
 
-* issue (hardening): An empty model reply is kept in the conversation and every later turn of the visit then fails
-:PROPERTIES:
-:REF: cycles/cycle-1793231989/reviews/site-turn.md#1
-:SEVERITY: medium
-:FILES: src/agent/loop.ts:92
-:END:
-If the model ends a reply with no content, the loop keeps an empty assistant message, the Messages API rejects every later request, and the page stays in the error state until a reload. Needs a model reply with no blocks, rare in ordinary use; the fix is to skip or reject an empty reply and add a test of a second turn after it.
-
 * issue (hardening): Component ids named like Object.prototype members give false successes or an unhelpful error
 :PROPERTIES:
 :REF: cycles/cycle-1793231989/reviews/site-turn.md#2
@@ -72,3 +64,27 @@ A network failure to the Messages API rejects the handler's promise, so what the
 :FILES: server/app.ts:82
 :END:
 The browser aborts its request to the relay, but the relay does not pass the request's signal on, so a stopped model request keeps running (and costing) until it completes; its reply is dropped. Design D6 says the model request is aborted. Pass request.signal to the upstream call, or change D6 to say it completes like a tool run. Tried: grep for signal in server/app.ts, none.
+
+* issue (hardening): The secret scrub misses an echo of the key in another form than its raw or JSON text
+:PROPERTIES:
+:REF: cycles/cycle-1793231989/reviews/fetch-tool.md#4
+:SEVERITY: low
+:FILES: server/fetchTool.ts:105
+:END:
+A keyed host that echoes its key percent-encoded or inside parsed JSON data gets it through to the page's data. Needs a host that echoes the key it was sent; scrub the parsed data and the encoded forms too.
+
+* issue (hardening): The address list lets IPv4-compatible (::/96) and site-local (fec0::/10) IPv6 addresses through
+:PROPERTIES:
+:REF: cycles/cycle-1793231989/reviews/fetch-tool.md#5
+:SEVERITY: low
+:FILES: server/fetchTool.ts:145
+:END:
+An allowlisted name whose DNS answers with such an address passes the connection-time check. Needs a hostile or rebound DNS answer; block both ranges, or allow only global unicast.
+
+* issue (hardening): A fetched response has no cap on size or total time
+:PROPERTIES:
+:REF: cycles/cycle-1793231989/reviews/fetch-tool.md#6
+:SEVERITY: low
+:FILES: server/fetchTool.ts:211
+:END:
+The server buffers the whole body and only an idle socket timeout ends a slow host, so a very large or dripping allowlisted host can hold memory and keep the turn in running tools until the visitor stops it. Cap the bytes and add an overall deadline.

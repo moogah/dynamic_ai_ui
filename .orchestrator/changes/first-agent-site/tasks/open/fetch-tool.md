@@ -2,7 +2,7 @@
 task_name: fetch-tool
 description: "The allowlisted fetch tool on the owner's server: allowlist checks, connection-time address check, secrets, trimming, and the data kept in the page spec"
 change: first-agent-site
-status: needs_review
+status: done
 merge_commit: 18cdfe1a59e72da471c19ab6391a04f763fb5fc1
 task_class: feature
 on_critical_path: true
