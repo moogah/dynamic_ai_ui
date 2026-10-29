@@ -92,7 +92,7 @@ describe("only allowlisted hosts", () => {
 
   // seam/allowlist: an image is loaded only through the server, so the page itself requests
   // nothing from a host, on the list or off it.
-  it.fails("draws no image the page would load from another host", async () => {
+  it("draws no image the page would load from another host", async () => {
     const model = new FakeModel()
       .reply(
         toolUse("toolu_1", "put_components", {
@@ -112,7 +112,7 @@ describe("only allowlisted hosts", () => {
 
   // seam/allowlist: the server's own transport checks the address a host resolves to when it
   // connects; an allowlisted name that resolves to this machine reaches nothing.
-  it.fails("refuses an allowlisted host whose address is not public, before any request reaches it", async () => {
+  it("refuses an allowlisted host whose address is not public, before any request reaches it", async () => {
     let hits = 0;
     const local: Server = createServer((_, res) => {
       hits++;

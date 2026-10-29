@@ -25,7 +25,7 @@ const heading = (id: string, words: string) => ({ id, type: "heading", parent: "
 const card = (id: string, title: string) => ({ id, type: "card", parent: "content", props: { title, body: "From the assistant." } });
 
 describe("one loop runs to completion per visitor message", () => {
-  it.fails("runs the page-spec tool the model calls, returns its result, and shows the reply (Scenario: agent-loop § A turn with a tool call)", async () => {
+  it("runs the page-spec tool the model calls, returns its result, and shows the reply (Scenario: agent-loop § A turn with a tool call)", async () => {
     const model = new FakeModel()
       .reply(text("Adding it."), toolUse("toolu_1", "put_components", { components: [heading("h1", "Hello")] }))
       .reply(text("Added a heading that says Hello."));
@@ -130,7 +130,7 @@ describe("the visitor can stop a turn", () => {
 });
 
 describe("visitors need nothing but a browser", () => {
-  it.fails("never lets the Claude API key reach the page or its network traffic (Scenario: agent-loop § No key in the browser)", async () => {
+  it("never lets the Claude API key reach the page or its network traffic (Scenario: agent-loop § No key in the browser)", async () => {
     const model = new FakeModel()
       .reply(toolUse("toolu_1", "put_components", { components: [heading("h1", "Hello")] }))
       .reply(text("Added a heading."));
@@ -146,7 +146,7 @@ describe("visitors need nothing but a browser", () => {
   });
 
   // seam/model-relay: the server keeps no conversation between requests.
-  it.fails("keeps one visitor's conversation out of another's", async () => {
+  it("keeps one visitor's conversation out of another's", async () => {
     const model = new FakeModel().reply(text("Noted, Alpha-7.")).reply(text("Hello there."));
     const first = await openSite({ model });
     first.say("my plan is called Alpha-7");
@@ -161,7 +161,7 @@ describe("visitors need nothing but a browser", () => {
   });
 
   // seam/model-relay: the server, not the page, fixes the model, system prompt and tool list.
-  it.fails("sends the model the tools the page runs, whatever the page asks for", async () => {
+  it("sends the model the tools the page runs, whatever the page asks for", async () => {
     const model = new FakeModel().reply(text("Hi."));
     const site = await openSite({ model });
     site.say("hello");
