@@ -54,4 +54,20 @@ No pending test is promoted by this task; the suite stays green with every `it.f
 
 ## Observations
 
+- Premise gap absorbed: the worktree had no `index.html` and no browser entry; added `index.html` and `src/main.tsx` (draws `App`, no StrictMode so the store/loop initialisers run once).
+- Keyed service chosen: football-data.org (`api.football-data.org`), free key, sent in the `X-Auth-Token` header, variable `FOOTBALL_DATA_API_KEY`. Header form, so no query-string form was added to the entry or to `fetchForTool`. A keyed host whose variable is unset is left off the allowlist with a warning (refused rather than called without its key). Open-Meteo ships as two keyless hosts: `api.open-meteo.com` and `geocoding-api.open-meteo.com` (place names to coordinates).
+- Allowlist file format: `allowlist.json` = `{ comment, hosts: [{ host, secret?: { header, env } }] }`; JSON has no comments, so the "one comment" is the `comment` field. Resolution lives in `server/config.ts` (`resolveAllowlist`, `loadHandler`); the Claude key comes from `ANTHROPIC_API_KEY`.
+- Running the server: Node 22 cannot run the TS server directly (extensionless imports), so `npm run build` also makes an SSR bundle `dist-server/main.js` (no new dependency); `npm start` = `node dist-server/main.js`, port from `PORT` (default 8080). Dev: instead of an HTTP proxy to a second process, a Vite plugin (`apply: "serve"`, lazy on the first `/api/` request) answers `/api/` in-process with the same handler via `ssrLoadModule`; `dist/` and `dist-server/` added to `.gitignore`.
+- Manual check (no real Claude key in this environment, so a fake one): `npm run build` then `ANTHROPIC_API_KEY=<fake> PORT=<free> node dist-server/main.js`: `/` serves the page, `/assets/index-*.js` 200, `/../package.json` 404, POST `/api/messages` reached api.anthropic.com and returned its `authentication_error` (invalid x-api-key), POST `/api/fetch` for example.org returned the allowlist refusal. Same two `/api/` calls through `npx vite` on a free port gave the same answers. No `sk-ant`/`ANTHROPIC` string in `dist/assets/*.js`. A turn reaching the model with a real key was not observed. `tsc -p .` clean; suite 23 tests, 0 failures, no test promoted.
+- thought: the relay does not forward `request.signal` to `fetchModel`, so a stopped turn keeps the upstream call running on the server; harmless now.
+
 ## Discoveries
+
+- discovery_id: disc-owner-server-entry-1
+  class: invariant-gap
+  description: The server's own transport refuses every IPv4 host as "not a public address". Node's `BlockList` matches an IPv4 address against the IPv6 subnet `::ffff:0:0/96` added in `server/fetchTool.ts`, so `notPublic.check(<any IPv4>, "ipv4")` is true. The shipped Open-Meteo source cannot be fetched with the real transport.
+  affected_seam: seam/allowlist
+  kind: issue
+  severity: high
+  evidence: manual check, POST /api/fetch for https://api.open-meteo.com/v1/forecast?... answered `api.open-meteo.com resolves to 188.40.99.226, which is not a public address`; `node -e` with a BlockList holding only `::ffff:0:0/96` gives `check("8.8.8.8","ipv4") === true`. The tests miss it because they replace the transport.
+  recommendation: drop `::ffff:0:0/96` from the ipv6 list and instead, for an IPv4-mapped IPv6 address, check its embedded IPv4 against the ipv4 list; add a unit test of `isPublicAddress` for 8.8.8.8 and ::ffff:127.0.0.1.

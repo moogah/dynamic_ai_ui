@@ -64,3 +64,11 @@ Putting a card that has children again as a heading succeeds, the model is still
 :FILES: server/app.ts:75
 :END:
 A network failure to the Messages API rejects the handler's promise, so what the visitor sees depends on the Node entry. Answer 502 with a plain error. Applies only when the model is unreachable.
+
+* question (hardening): Stopping a turn leaves the upstream model request running on the server
+:PROPERTIES:
+:REF: disc-stop-and-undo-1
+:SEVERITY: low
+:FILES: server/app.ts:82
+:END:
+The browser aborts its request to the relay, but the relay does not pass the request's signal on, so a stopped model request keeps running (and costing) until it completes; its reply is dropped. Design D6 says the model request is aborted. Pass request.signal to the upstream call, or change D6 to say it completes like a tool run. Tried: grep for signal in server/app.ts, none.

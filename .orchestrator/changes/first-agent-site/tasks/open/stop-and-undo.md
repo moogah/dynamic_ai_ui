@@ -2,7 +2,8 @@
 task_name: stop-and-undo
 description: "Stopping a turn and the one-step undo, with the model told the page as undo left it"
 change: first-agent-site
-status: ready
+status: needs_review
+merge_commit: 27d7b87c75c9e47990e4b50691574dfb4df16993
 task_class: feature
 on_critical_path: true
 
@@ -62,4 +63,21 @@ Run `npx vitest run --reporter=junit --passWithNoTests` and report the last 10 l
 
 ## Observations
 
+- `AgentLoop.stop` finishes the stop synchronously (aborts the turn's controller, answers the running reply's unanswered tool calls, goes to awaiting the visitor) instead of waiting for the aborted request to reject; the turn's coroutine checks `signal.aborted` after every await and returns without touching state, the conversation or the page store. So a late reply is dropped even from a `callModel`/`fetchUrl` that ignores the signal. Evidence: src/agent/loop.ts `stop()`, the `if (signal.aborted) return` lines in `send`.
+- Unanswered tool calls get an error tool_result with `STOPPED_RESULT` (src/agent/tools.ts), and `runTool` itself returns that result rather than applying a fetch outcome that arrives after the stop.
+- Ambiguity resolved: a turn stopped while the model was answering leaves the conversation ending on a user message (the visitor's words or the last tool results). The next visitor message's blocks are appended to that user message, so roles keep alternating; no message is rewritten or removed (D4). Not stated in seam/stop.
+- Undo is `disabled` while a turn runs and Stop is `disabled` between turns (src/App.tsx). The chat gets a "Stopped by the visitor." line and one "<tool>: stopped" line per call stopped.
+- Weak test: the harness's `abortable` rejects the held model reply on abort, so the "late reply arrives and is dropped" path through the post-await `signal.aborted` check is only exercised for the reject path, not for a reply that resolves after abort.
+- thought: Undo stays enabled between turns even when there is nothing to undo (`PageStore.undo` returns false); a `canUndo` on the store would let the button say so.
+- No pending test outside the Verification list started passing; the 2 remaining `it.fails` stay pending and green.
+
 ## Discoveries
+
+- discovery_id: disc-stop-and-undo-1
+  class: invariant-gap
+  description: Stopping aborts the browser's request to /api/messages, but the server's relay does not pass the incoming request's signal to its upstream Messages API call (server/app.ts:82 `fetchModel(MESSAGES_API, {...})` has no `signal`), so a stopped model request keeps running and billing at the Messages API until it completes. D6 allows a running tool on the server to complete; it says the model request is aborted.
+  affected_seam: seam/stop, seam/model-relay
+  kind: question
+  severity: low
+  evidence: grep -n signal server/app.ts returns nothing; fetchTool.ts likewise has no signal for the data host fetch (that one D6 explicitly allows).
+  recommendation: pass `request.signal` to `fetchModel` in the relay, or record in D6 that the upstream model request, like a tool run, completes on the server and is dropped.

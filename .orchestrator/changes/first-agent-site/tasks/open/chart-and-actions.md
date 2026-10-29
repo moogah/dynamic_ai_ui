@@ -2,7 +2,8 @@
 task_name: chart-and-actions
 description: "Draw chart, image, form and button: charts bound to fetched data, images through the server, buttons and forms sending a visitor message"
 change: first-agent-site
-status: ready
+status: needs_review
+merge_commit: 1ab1993975df29b68b75e76e06c1f0f917605e09
 task_class: feature
 on_critical_path: true
 
@@ -67,4 +68,21 @@ Run `npx vitest run --reporter=junit --passWithNoTests` and report the last 10 l
 
 ## Observations
 
+- Presses during a turn are refused, not queued: a button or form calls `AgentLoop.send`, which returns without effect while the loop is busy (the same rule the Send button follows). Nothing tells the visitor the press was ignored; thought: disable page buttons while a turn runs if that confuses visitors.
+- Charts are hand-drawn SVG (D1 leaves the choice open), no new dependency. `data-point-count` counts the values that are numbers (numeric strings included); a value that is not a number is not drawn and not counted. The chart is a `<figure>` carrying the marks plus `data-chart-kind`/`data-point-count`.
+- Image route: `GET /api/image?src=<url>` in `server/app.ts`. To reuse the fetch tool's host checks and transport, `fetchForTool`'s request/redirect loop was extracted into `fetchAllowed` in `server/fetchTool.ts` (behaviour of `fetchForTool` unchanged; its tests stay green). `fetchImage` returns only `image/*` other than SVG, and refuses an image whose bytes contain a host's secret; a refusal is a 403 naming only the host. The renderer draws `<img src="/api/image?src=...">` only for an http(s) src; the alt text is shown as a caption either way, so an image off the list shows its alt and no image.
+- `IMAGE_PATH` and `imageThroughServer` live in `src/page/catalog.ts` beside the image entry, so the server and the registry share one path without the server importing a .tsx module.
+- A form sends one line per field, "<label>: <value>", joined by newlines; its submit button reads `submitLabel` or "Send".
+- No test covers bar or pie charts, the image route returning an allowlisted image, or form submission (weak coverage; only line chart and button are asserted).
+- No pending test outside the Verification list started passing.
+
 ## Discoveries
+
+- discovery_id: disc-chart-and-actions-1
+  class: interface-drift
+  description: seam/allowlist names only `fetchForTool` and `createApp` as owners, but the allowlist checks now live in `fetchAllowed`, shared by `fetchForTool` and `fetchImage` (the image route D8 requires).
+  affected_seam: seam/allowlist
+  kind: question
+  severity: low
+  evidence: server/fetchTool.ts `fetchAllowed`, `fetchImage`; server/app.ts image route at `IMAGE_PATH`.
+  recommendation: add `fetchAllowed`/`fetchImage` to the row's owning symbols, and name data-fetch's "draws no image the page would load from another host" test in its tests column.
