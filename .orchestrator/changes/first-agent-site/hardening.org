@@ -1,14 +1,6 @@
 #+TITLE: Hardening list: first-agent-site
 #+OPTIONS: ^:{} -:nil
 
-* question (hardening): The catalog holds twelve type names where the design and the page-spec say eleven types
-:PROPERTIES:
-:REF: disc-site-turn-2
-:SEVERITY: low
-:FILES: src/page/catalog.ts
-:END:
-"form/button" is counted as one type in design D9 and page-spec § The first component catalog, but the page spec needs two names, form and button, so the catalog has twelve. Settle at integrate's conformance check: say "twelve types" or merge them into one.
-
 * issue (hardening): The chat shows the whole fetched view of every fetch
 :PROPERTIES:
 :REF: disc-fetch-tool-2
@@ -17,13 +9,13 @@
 :END:
 The chat line for each tool call prints the whole tool result, so a fetch puts up to 20,000 characters of the response into the chat log. The page and the fetch still work; the chat is cluttered.
 
-* question (hardening): The fetch transport is a node:http(s) lookup check, not the undici dispatcher the allowlist row's note names
+* issue (hardening): The test harness keeps an unreachable dispatcher branch whose comment names a mechanism the server does not use
 :PROPERTIES:
 :REF: disc-fetch-tool-1
 :SEVERITY: low
-:FILES: server/fetchTool.ts, test/support/site.ts
+:FILES: test/support/site.ts:191
 :END:
-The row's statement holds (refusal at connection time) but its note and the harness's dispatcher branch name a mechanism that is not used. Settle at integrate's conformance check: correct the note, and drop or keep the unused harness branch.
+The server refuses a non-public address at connection time through a lookup check on its own transport, and the design row says only that. The harness has a branch for an undici dispatcher that no code path reaches, and its comment is untrue. No behaviour is affected; the conformance check found nothing stale in the design.
 
 * issue (hardening): Component ids named like Object.prototype members give false successes or an unhelpful error
 :PROPERTIES:
@@ -136,3 +128,19 @@ Values of zero or less are dropped from the slices but counted in data-point-cou
 :FILES: src/render/registry.tsx:50
 :END:
 The server refuses the image, the page shows a broken icon beside the caption. Hide the img on error and give it an empty alt when the caption carries the text.
+
+* issue (hardening): Stopping a turn builds the stopped tool results in a second place beside the tool runner
+:PROPERTIES:
+:REF: arch-cycle-1793231989-2
+:SEVERITY: high
+:FILES: src/agent/loop.ts:159, src/agent/tools.ts:66
+:END:
+The stop control and the tool runner each build the answer the model API requires for a tool call. They agree today; if one changes, every later request of the visit could be refused. Nothing the visitor does goes wrong now. One builder in the tool module, used by both, removes the risk.
+
+* issue (hardening): A component prop named like a built-in object member passes validation
+:PROPERTIES:
+:REF: arch-cycle-1793231989-3
+:SEVERITY: low
+:FILES: src/page/catalog.ts:155, src/page/bindings.ts:8
+:END:
+A prop named constructor, toString or __proto__ is accepted although the component type does not define it, and a wrong-kind value under __proto__ reaches the drawing. Only a prop name the assistant would have to invent in that form triggers it. Test prop names with Object.hasOwn and build the resolved props without a prototype.
