@@ -2,7 +2,7 @@
 task_name: stop-and-undo
 description: "Stopping a turn and the one-step undo, with the model told the page as undo left it"
 change: first-agent-site
-status: needs_review
+status: done
 merge_commit: 27d7b87c75c9e47990e4b50691574dfb4df16993
 task_class: feature
 on_critical_path: true

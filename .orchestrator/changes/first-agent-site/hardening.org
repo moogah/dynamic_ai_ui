@@ -59,7 +59,7 @@ A network failure to the Messages API rejects the handler's promise, so what the
 
 * question (hardening): Stopping a turn leaves the upstream model request running on the server
 :PROPERTIES:
-:REF: disc-stop-and-undo-1
+:REF: disc-stop-and-undo-1; cycles/cycle-1793231989/reviews/stop-and-undo.md#2
 :SEVERITY: low
 :FILES: server/app.ts:82
 :END:
@@ -88,3 +88,51 @@ An allowlisted name whose DNS answers with such an address passes the connection
 :FILES: server/fetchTool.ts:211
 :END:
 The server buffers the whole body and only an idle socket timeout ends a slow host, so a very large or dripping allowlisted host can hold memory and keep the turn in running tools until the visitor stops it. Cap the bytes and add an overall deadline.
+
+* issue (hardening): A form's default submit label "Send" collides with the chat's Send button
+:PROPERTIES:
+:REF: cycles/cycle-1793231989/reviews/chart-and-actions.md#2
+:SEVERITY: low
+:FILES: src/render/registry.tsx:155
+:END:
+Two buttons named Send with different effects: confusing to a screen reader, and the test harness's say() throws once a form with the default label is drawn. Use a label that cannot collide and scope the harness's chat queries to the chat.
+
+* issue (hardening): Form fields that share a name lose all but the first value
+:PROPERTIES:
+:REF: cycles/cycle-1793231989/reviews/chart-and-actions.md#3
+:SEVERITY: low
+:FILES: src/render/registry.tsx:140
+:END:
+Two fields of one name send the first one's value twice. Name inputs by index or reject duplicate names in the catalog.
+
+* issue (hardening): Page buttons and forms stay enabled during a turn and a press is dropped silently
+:PROPERTIES:
+:REF: cycles/cycle-1793231989/reviews/chart-and-actions.md#4
+:SEVERITY: low
+:FILES: src/App.tsx:49
+:END:
+The chat's Send is disabled while a turn runs but a page button is not, and pressing it does nothing and says nothing. Disable them while busy.
+
+* issue (hardening): The line chart includes zero in its scale and draws no labels, so a series like 16.9 to 18.1 looks flat
+:PROPERTIES:
+:REF: cycles/cycle-1793231989/reviews/chart-and-actions.md#5
+:SEVERITY: low
+:FILES: src/render/registry.tsx:194
+:END:
+The chart is correct by its marks but hard to read: the scale is anchored at zero for every kind and values and labels show only on hover. Scale lines to the data and draw first and last labels and min and max.
+
+* issue (hardening): A pie's point count and label count points that are not drawn
+:PROPERTIES:
+:REF: cycles/cycle-1793231989/reviews/chart-and-actions.md#6
+:SEVERITY: low
+:FILES: src/render/registry.tsx:119
+:END:
+Values of zero or less are dropped from the slices but counted in data-point-count and the aria-label.
+
+* issue (hardening): An image from a host off the allowlist draws a broken-image icon and announces its alt text twice
+:PROPERTIES:
+:REF: cycles/cycle-1793231989/reviews/chart-and-actions.md#7
+:SEVERITY: low
+:FILES: src/render/registry.tsx:50
+:END:
+The server refuses the image, the page shows a broken icon beside the caption. Hide the img on error and give it an empty alt when the caption carries the text.

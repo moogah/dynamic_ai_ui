@@ -2,7 +2,7 @@
 task_name: chart-and-actions
 description: "Draw chart, image, form and button: charts bound to fetched data, images through the server, buttons and forms sending a visitor message"
 change: first-agent-site
-status: needs_review
+status: done
 merge_commit: 1ab1993975df29b68b75e76e06c1f0f917605e09
 task_class: feature
 on_critical_path: true
