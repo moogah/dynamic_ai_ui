@@ -75,7 +75,7 @@ export function createApp(options: AppOptions): Handler {
     const outcome = await fetchImage(src, { allowlist, fetchData });
     if (!outcome.ok) return problem(403, outcome.error);
     return new Response(outcome.bytes, {
-      headers: { "content-type": outcome.type, "x-content-type-options": "nosniff", "cache-control": "private, max-age=300" },
+      headers: { "content-type": outcome.type, "x-content-type-options": "nosniff", "content-security-policy": "default-src 'none'; sandbox", "cache-control": "private, max-age=300" },
     });
   }
 

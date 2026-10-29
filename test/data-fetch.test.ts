@@ -261,3 +261,23 @@ describe("a keyed host's secret stays on the server", () => {
     expect(hosts.requests.every((r) => r.headers["x-api-key"] === SECRET && r.url.startsWith("https:"))).toBe(true);
   });
 });
+
+describe("the image route serves only raster images", () => {
+  // Inline fix after the review of chart-and-actions (finding 1): the upstream Content-Type was
+  // passed through after a one-type denylist, so a crafted type became a document on the site's origin.
+  async function image(contentType: string, body: BodyInit = "bytes") {
+    const { createApp } = await load("/server/app");
+    const hosts = new FakeHosts().on("img.ok", () => new Response(body, { headers: { "content-type": contentType } }));
+    const handler = createApp({ anthropicApiKey: "k", allowlist: [{ host: "img.ok" }], fetchModel: new FakeModel().fetch, fetchData: hosts.fetch });
+    return handler(new Request("http://localhost/api/image?src=" + encodeURIComponent("https://img.ok/pic")));
+  }
+
+  it("answers a raster type with that type alone, and refuses a crafted or document type", async () => {
+    const png = await image("image/png; charset=binary");
+    expect(png.status).toBe(200);
+    expect(png.headers.get("content-type")).toBe("image/png");
+    for (const crafted of ["image/png, text/html", "image/x-foo+xml", "image/svg+xml", "text/html", "image/png\ttext/html"]) {
+      expect((await image(crafted, "<script>alert(1)</script>")).status).toBe(403);
+    }
+  });
+});

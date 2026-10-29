@@ -117,15 +117,18 @@ export async function fetchAllowed(url: string, options: FetchToolOptions, accep
   }
 }
 
+// The only types the image route answers with, written by the server and never taken from the host's header.
+const RASTER_TYPES = new Set(["image/png", "image/jpeg", "image/gif", "image/webp", "image/avif", "image/bmp", "image/x-icon"]);
+
 // An image for the page (seam/allowlist, design D8): fetched under the same allowlist and
-// transport as the fetch tool, returned only when it is a raster image that holds no secret.
-// SVG is refused, since it is text the host writes and could carry anything.
+// transport as the fetch tool, returned only when its type is one of those and its bytes hold no secret.
+// SVG and any other document type is refused, since it is text the host writes and could carry anything.
 export async function fetchImage(url: string, options: FetchToolOptions): Promise<{ ok: true; bytes: ArrayBuffer; type: string } | { ok: false; error: string }> {
   const fetched = await fetchAllowed(url, options, "image/*");
   if (!fetched.ok) return fetched;
   const { response, url: final, secrets } = fetched;
   const type = (response.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
-  if (!response.ok || !type.startsWith("image/") || type === "image/svg+xml") {
+  if (!response.ok || !RASTER_TYPES.has(type)) {
     void response.body?.cancel().catch(() => {});
     return { ok: false, error: `${final.hostname} did not answer with an image` };
   }
