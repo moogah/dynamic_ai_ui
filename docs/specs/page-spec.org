@@ -7,7 +7,7 @@ The page a visitor sees is drawn from a page spec the assistant edits, so the as
 * Requirements
 
 ** Requirement: The page is drawn from the page spec
-The page SHALL show exactly what the page spec describes: components, each with an id and a type from the component catalog, arranged by row and column containers, showing data the page spec holds.
+The page SHALL show exactly what the page spec describes: components, each with an id and a type from the component catalog, arranged by row and column containers, showing data the page spec holds. The page spec is this project's own format, not an outside library's.
 
 *** Scenario: The skeleton on first load
 - *WHEN* a visitor opens the site
@@ -34,6 +34,14 @@ The catalog SHALL contain: heading, text, image, card, list, row container, colu
 - *WHEN* the page spec holds a series fetched from an API
 - *AND* the assistant adds a line chart bound to that series
 - *THEN* a line chart of the series is drawn
+
+** Requirement: A form or button acts by sending a message
+Pressing a button, or submitting a form, on the page SHALL send a visitor message to the assistant as if the visitor had typed it: a button its label, a form its filled-in fields. The page spec SHALL hold no other action.
+
+*** Scenario: A button sends a visitor message
+- *WHEN* the assistant has put a button labelled "Show tomorrow" on the page
+- *AND* the visitor presses it
+- *THEN* the assistant receives "Show tomorrow" as a visitor message and a turn starts
 
 ** Requirement: The page spec lasts for the visit only
 The page spec SHALL live in the visitor's browser only.

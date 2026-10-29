@@ -1,11 +1,12 @@
 :PROPERTIES:
 :ID: ask-cycle-1793231989-4
 :KIND: decision
-:STATUS: open
+:STATUS: applied
 :RAISED_BY: orchestrator
 :REF: design.org § Open Questions Q4
 :HAPPENED: no
 :BLOCKS: plan
+:APPLIED_VIA: design.org D13
 :END:
 #+TITLE: What should happen when a visitor presses a button or submits a form the assistant put on the page?
 

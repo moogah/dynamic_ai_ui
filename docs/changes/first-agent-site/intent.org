@@ -44,18 +44,4 @@ Done when the user has played with it open-endedly and knows what is hard about 
 - *allowlist*: the owner's list of hosts the fetch tool may call, each with an optional secret the server adds. Example: "add the weather API to the allowlist." Avoid: whitelist, connector list. (agreed 2026-10-28)
 
 * Open Questions
-** Which data sources does the first test use?
-Not critical: picks the demo, not the design.
-- A free keyless API (e.g. Open-Meteo weather): nothing to configure; the allowlist's secret injection goes untested.
-- One keyed API alongside it: exercises secret injection from the start.
-Recommendation: one keyless and one keyed API, so every data-fetch requirement is exercised. Affects: data-fetch § Fetch then display.
-** Adopt json-render, or define our own page spec in its shape?
-Not critical.
-- Adopt json-render: ready-made React renderer; its format and versioning are someone else's.
-- Our own minimal spec in json-render's shape, edited by add-or-replace-by-id, remove and set-data tools: a little more to write; fully visible and ours.
-Recommendation: our own minimal spec (E2), matching the experiment's aim of visible mechanics. Affects: page-spec § The page is drawn from the page spec.
-** Does the hand-written loop run in the browser or on the server?
-Not critical: either keeps the key on the server and costs the same round trips (E3); the page-spec tools run in the browser either way.
-- Browser loop behind a thin key-adding proxy: every state visible in one place, in the page.
-- Server loop that hands page-spec tool calls to the browser: the prompt and tool list are enforced server-side only.
-Recommendation: browser loop behind a proxy that fixes the system prompt and tool list. Affects: agent-loop § Visitors need nothing but a browser.
+Answered by the user at the first plan (cycle-1793231989): design.org D10, D11, D12.

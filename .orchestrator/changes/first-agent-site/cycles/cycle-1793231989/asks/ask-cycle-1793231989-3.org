@@ -1,11 +1,12 @@
 :PROPERTIES:
 :ID: ask-cycle-1793231989-3
 :KIND: decision
-:STATUS: open
+:STATUS: applied
 :RAISED_BY: orchestrator
 :REF: design.org § Open Questions Q3
 :HAPPENED: no
 :BLOCKS: plan
+:APPLIED_VIA: design.org D12
 :END:
 #+TITLE: Should the code that runs each turn live in the visitor's browser, or on the owner's server?
 

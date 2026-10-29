@@ -1,11 +1,12 @@
 :PROPERTIES:
 :ID: ask-cycle-1793231989-2
 :KIND: decision
-:STATUS: open
+:STATUS: applied
 :RAISED_BY: orchestrator
 :REF: design.org § Open Questions Q2
 :HAPPENED: no
 :BLOCKS: plan
+:APPLIED_VIA: design.org D11
 :END:
 #+TITLE: Should the page spec be json-render's format, or our own small format shaped like it?
 

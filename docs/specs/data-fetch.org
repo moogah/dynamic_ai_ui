@@ -28,7 +28,7 @@ The server SHALL fetch only from hosts on an owner-maintained allowlist, SHALL c
 - *THEN* the redirect is not followed and the tool returns an error
 
 ** Requirement: Secrets added by the server
-For an allowlisted host that needs a key, the server SHALL add it to the request; the key never reaches the model or the browser.
+For an allowlisted host that needs a key, the server SHALL add it to the request; the key never reaches the model or the browser. The first build's allowlist SHALL hold one host that needs no key (the weather API) and one that needs a key.
 
 ** Requirement: Large responses are trimmed
 A response too large for the model's context SHALL be trimmed before the model reads it.

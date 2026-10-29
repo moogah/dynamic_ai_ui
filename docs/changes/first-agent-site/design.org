@@ -6,7 +6,7 @@ At the change's base (0d4b75e) and at the round's HEAD the repository holds no c
 
 The research settled what the design starts from: the assistant edits a page spec over a fixed component catalog and never writes markup; changes are for the visitor who made them and are gone on reload; a small stateless server owned by the site's owner holds the Claude key and the data secrets and is the only party that calls the Messages API or a data API; the loop is hand-written over the Messages API; undo is one turn back (brief § Decided). E3 found the loop to be about thirty lines, the browser-loop and server-loop placements to cost the same model round trips, and fetched payloads to be best kept out of the model's context; E2 found the declarative page specs of prior art converging on a flat id-keyed component map, a separate data model bound by path, and coarse upsert/remove tools.
 
-Four questions are open (§ Open Questions). The rows of seam/page-tools, seam/catalog, seam/renderer, seam/turn, seam/loop-state, seam/stop, seam/model-relay, seam/tool-list and seam/page-actions are drafted in the form their recommendations imply; each entry names the rows and tests that depend on it.
+The round's four open questions were answered by the user at the first plan (cycle-1793231989), each on its recommendation: D10 to D13. The rows drafted in the form those recommendations implied stand as written.
 
 * Decisions
 
@@ -39,6 +39,18 @@ The allowlist is a file the owner edits: each entry a host and, for a keyed host
 ** D9: The first component catalog (seam/catalog)
 The catalog holds the eleven types of page-spec § The first component catalog: heading, text, image, card, list, row, column, table, chart (line, bar, pie), key-figure tile and form/button. Each type's props are validated where the catalog defines it, and a prop either holds its value or binds to the page spec's data by name and path. Every prop is drawn as what it says, never as markup (the assistant writes no HTML or scripts). The tests draw heading, text, image, card, table, chart and button; the other types share the same path from the catalog to the drawing.
 
+** D10: The first allowlist ships one keyless source and one keyed source (ask-cycle-1793231989-1)
+The allowlist the first build ships holds a keyless host (Open-Meteo weather) and one host that needs a secret, so data-fetch § Secrets added by the server is tried against a real service from the start. The user left the keyed service to the Implementor: one with a free key. Its secret goes in a request header (D8); a service that takes its key in the query string adds that form to the allowlist entry. The tests script their hosts either way.
+
+** D11: Our own page spec, in json-render's shape (ask-cycle-1793231989-2)
+The page spec is this project's own minimal format, not json-render's: a flat id-keyed component map with a separate data model bound by path, edited by =put_components=, =remove_component= and =set_data=, a binding written ={"$data": "/<name>/<path>"}=. Why: the experiment's aim is visible mechanics, and E2 found the small format enough. Rows: seam/page-tools, seam/catalog, seam/renderer.
+
+** D12: The loop runs in the browser, behind a relay (ask-cycle-1793231989-3)
+The hand-written loop and the conversation live in the page (=src/agent/loop.ts=); the owner's server is a relay that adds the key and fixes the model, system prompt and tool list (D7). Why: E3 found both placements cost the same round trips and both keep the key on the server; the browser keeps every state of a turn in one place. Rows: seam/turn, seam/loop-state, seam/stop, seam/model-relay, seam/tool-list.
+
+** D13: A form or button sends a visitor message (ask-cycle-1793231989-4)
+Pressing a button sends its label, and submitting a form sends its filled-in fields, as a visitor message through the loop, as if typed; it starts a turn. The page spec holds no other action. Why: one path into the loop the page already has, and nothing code-like in the page spec. page-spec gains § A form or button acts by sending a message, scenario § A button sends a visitor message. Row: seam/page-actions.
+
 * Seams
 
 | id | statement | owning symbols | scenarios | tests |
@@ -48,7 +60,7 @@ The catalog holds the eleven types of page-spec § The first component catalog: 
 | seam/page-tools | The page-spec tools (put components by id, remove a component, set data) each take a page spec and a tool input and give either a new page spec or a tool error, never part of an edit; they and the page spec import nothing from the renderer. | =src/page/tools.ts=: =runPageTool=, =pageToolDefinitions= | page-spec § An edit appears without a reload; page-spec § An unknown type is rejected; agent-loop § A turn with a tool call | =test/page-spec.test.ts=; =test/agent-loop.test.ts= |
 | seam/renderer | The renderer draws the page spec its page store holds and nothing else: one drawn element per component, marked with its id and type, with data bindings resolved against the page spec's data by one renderer-independent resolver; an edit redraws the components it changed and leaves every other drawn element in place. | =src/render/PageView.tsx=: =PageView=; =src/page/bindings.ts=: =resolveBindings= | page-spec § The skeleton on first load; page-spec § An edit appears without a reload; page-spec § Data shown as a chart | =test/page-spec.test.ts=; =test/data-fetch.test.ts= |
 | seam/page-snapshot | Each visitor message the model receives carries the page as it stands, described in one place: every component with its id, type and props, and the data by name and shape, never in full. | =src/page/snapshot.ts=: =describePage=; =src/agent/loop.ts=: =AgentLoop.send= | page-spec § Undo restores the page before the last turn | =test/page-spec.test.ts=; =test/data-fetch.test.ts= |
-| seam/page-actions | A form or button on the page acts only by sending a visitor message through the loop, as if the visitor typed it; the page spec holds no other action. | =src/render/registry.tsx=: =registry=; =src/agent/loop.ts=: =AgentLoop.send= |  | =test/page-spec.test.ts= |
+| seam/page-actions | A form or button on the page acts only by sending a visitor message through the loop, as if the visitor typed it; the page spec holds no other action. | =src/render/registry.tsx=: =registry=; =src/agent/loop.ts=: =AgentLoop.send= | page-spec § A button sends a visitor message | =test/page-spec.test.ts= |
 | seam/tool-list | One module defines the tools the model is offered, the page-spec tools and the fetch tool, with their names, descriptions and input schemas; the server sends exactly that list, and the browser runs each call and builds each tool result in one place. | =src/agent/tools.ts=: =toolDefinitions=, =runTool=; =server/app.ts=: =createApp= | agent-loop § A turn with a tool call; data-fetch § Fetch then display | =test/agent-loop.test.ts=; =test/data-fetch.test.ts= |
 | seam/turn | A turn runs from one visitor message until the model ends its reply: the loop sends the conversation through the server, runs every tool call of a reply and answers all of them in one message, failures as error results, and repeats; the page store's copy for undo is taken as the turn starts. | =src/agent/loop.ts=: =createAgentLoop=, =AgentLoop.send= | agent-loop § A turn with a tool call; page-spec § An unknown type is rejected; page-spec § Undo restores the page before the last turn | =test/agent-loop.test.ts=; =test/page-spec.test.ts= |
 | seam/loop-state | The loop is the only writer of its state, always one of idle, calling the model, running tools, awaiting the visitor and error, and the page shows the current state's label from one mapping. | =src/agent/loop.ts=: =AgentLoop.state=, =AgentLoop.subscribe=; =src/agent/states.ts=: =LoopState=, =stateLabel= | agent-loop § The visitor sees progress | =test/agent-loop.test.ts= |
@@ -56,38 +68,3 @@ The catalog holds the eleven types of page-spec § The first component catalog: 
 | seam/model-relay | The server alone holds the Claude API key: it sends the page's conversation to the Messages API with its own model, system prompt and tool list, returns only the model's reply, and keeps nothing between requests. | =server/app.ts=: =createApp= | agent-loop § No key in the browser | =test/agent-loop.test.ts= |
 | seam/allowlist | The server requests only from allowlisted hosts, checked on the parsed URL before any request and again on every redirect, and its own transport refuses at connection time a host whose address is not public; a host's secret goes only on requests to that host and is absent from everything the server returns; the page loads nothing from another host. | =server/fetchTool.ts=: =fetchForTool=; =server/app.ts=: =createApp= | data-fetch § A host not on the list is refused; data-fetch § A redirect off the list is not followed | =test/data-fetch.test.ts= |
 | seam/fetch-result | The fetch tool has one result: the whole response, for the browser to keep in the page spec's data under the name the assistant gave, and the view the model reads, cut to a size limit and saying, when cut, that it was trimmed and how much was left out. | =server/fetchTool.ts=: =fetchForTool=; =src/agent/tools.ts=: =runTool= | data-fetch § Fetch then display; data-fetch § A trimmed result says so; page-spec § Data shown as a chart | =test/data-fetch.test.ts= |
-
-* Open Questions
-
-** Q1 (intent): Which data sources does the first test use?
-Not critical: picks the demo, not the design.
-- A free keyless API (e.g. Open-Meteo weather): nothing to configure; the allowlist's secret injection goes untested.
-- One keyed API alongside it: exercises secret injection from the start.
-Recommendation: one keyless and one keyed API, so every data-fetch requirement is exercised. Affects: data-fetch § Fetch then display.
-
-Round's note: the pending tests do not depend on the answer; they script their hosts, and the secret test (=test/data-fetch.test.ts=, "adds the host's secret to the request and keeps it from the model and the page") pins data-fetch § Secrets added by the server either way. What depends on it is the allowlist the first build ships (D8) and the form of an entry's secret: D8 is drafted with the secret sent in a request header; a keyed API that takes its key in the query string adds that form. On the keyed option the user names the API, or leaves the Implementor to pick one with a free key.
-
-** Q2 (intent): Adopt json-render, or define our own page spec in its shape?
-Not critical.
-- Adopt json-render: ready-made React renderer; its format and versioning are someone else's.
-- Our own minimal spec in json-render's shape, edited by add-or-replace-by-id, remove and set-data tools: a little more to write; fully visible and ours.
-Recommendation: our own minimal spec (E2), matching the experiment's aim of visible mechanics. Affects: page-spec § The page is drawn from the page spec.
-
-Round's note: drafted on the recommendation. Depending on it: seam/page-tools (the three tools and their inputs), seam/catalog (validation defined in our catalog), seam/renderer (our registry and resolver), and every pending test through the tool names and inputs they script (=put_components=, =remove_component=, =set_data=, a data binding written ={"$data": "/<name>/<path>"}=) and the marks they find drawn components by. On adopting json-render, those rows are rewritten around its spec and renderer, and the tests' scripted tool calls and binding form change with them.
-
-** Q3 (intent): Does the hand-written loop run in the browser or on the server?
-Not critical: either keeps the key on the server and costs the same round trips (E3); the page-spec tools run in the browser either way.
-- Browser loop behind a thin key-adding proxy: every state visible in one place, in the page.
-- Server loop that hands page-spec tool calls to the browser: the prompt and tool list are enforced server-side only.
-Recommendation: browser loop behind a proxy that fixes the system prompt and tool list. Affects: agent-loop § Visitors need nothing but a browser.
-
-Round's note: drafted on the recommendation, with the proxy fixing the model, system prompt and tool list (D7). Depending on it: seam/turn, seam/loop-state, seam/stop, seam/model-relay and seam/tool-list, which put the loop and the conversation in =src/agent/loop.ts= and make the server a relay. No pending test depends on the answer: they drive the page and script only the server's outbound edges (D2), so they hold for either placement; on a server loop those rows move the loop into =server/= and the relay becomes the loop.
-
-** Q4: What does a form or button on the page do when the visitor uses it?
-The component catalog must have form/button (page-spec § The first component catalog, R6), but no requirement says what pressing one does, and an Implementor would otherwise decide it.
-- It sends a message to the assistant on the visitor's behalf, as if typed (a button its label, a form its filled-in fields), which starts a turn: the assistant can build small interactive pages ("Show tomorrow", a city picker); each press costs a turn.
-- It is drawn but does nothing: nothing more to build; forms and buttons are decoration and the visitor always types.
-- It runs a fixed action the assistant attached, on the page, without the model (fetch again, show or hide a section): presses are instant and free, but the page spec gains an action vocabulary, more to build and close to the scripts the intent rules out.
-Recommendation: the first. It is one path into the loop the page already has, keeps the page spec free of anything code-like, and fits R2's "the visitor refines it in conversation". On the answer, page-spec gains a scenario for it.
-
-Drafted on the recommendation: seam/page-actions, and the pending test in =test/page-spec.test.ts=, "sends a visitor message when the visitor presses a button the assistant drew". On the second option the row and that test are deleted; on the third the row is rewritten around the action set and the test with it.

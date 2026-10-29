@@ -31,7 +31,7 @@ The visitor SHALL be able to cancel a running turn.
 - *AND* undo removes it
 
 ** Requirement: Visitors need nothing but a browser
-The owner's server SHALL supply the Claude API key, which never reaches the browser. The server fixes the system prompt and the tool list in its own code and stores no page spec and no conversation between requests.
+The owner's server SHALL supply the Claude API key, which never reaches the browser. The server fixes the system prompt and the tool list in its own code and stores no page spec and no conversation between requests. The loop runs in the visitor's browser; the server relays each model request.
 
 *** Scenario: No key in the browser
 - *WHEN* a visitor inspects the page and its network traffic

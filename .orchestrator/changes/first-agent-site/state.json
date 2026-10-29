@@ -19,38 +19,38 @@
     {
       "id": "ask-cycle-1793231989-1",
       "kind": "decision",
-      "status": "open",
+      "status": "applied",
       "blocks": [
         "plan"
       ],
-      "path": ".orchestrator/changes/first-agent-site/inbox/ask-cycle-1793231989-1.org"
+      "path": ".orchestrator/changes/first-agent-site/cycles/cycle-1793231989/asks/ask-cycle-1793231989-1.org"
     },
     {
       "id": "ask-cycle-1793231989-2",
       "kind": "decision",
-      "status": "open",
+      "status": "applied",
       "blocks": [
         "plan"
       ],
-      "path": ".orchestrator/changes/first-agent-site/inbox/ask-cycle-1793231989-2.org"
+      "path": ".orchestrator/changes/first-agent-site/cycles/cycle-1793231989/asks/ask-cycle-1793231989-2.org"
     },
     {
       "id": "ask-cycle-1793231989-3",
       "kind": "decision",
-      "status": "open",
+      "status": "applied",
       "blocks": [
         "plan"
       ],
-      "path": ".orchestrator/changes/first-agent-site/inbox/ask-cycle-1793231989-3.org"
+      "path": ".orchestrator/changes/first-agent-site/cycles/cycle-1793231989/asks/ask-cycle-1793231989-3.org"
     },
     {
       "id": "ask-cycle-1793231989-4",
       "kind": "decision",
-      "status": "open",
+      "status": "applied",
       "blocks": [
         "plan"
       ],
-      "path": ".orchestrator/changes/first-agent-site/inbox/ask-cycle-1793231989-4.org"
+      "path": ".orchestrator/changes/first-agent-site/cycles/cycle-1793231989/asks/ask-cycle-1793231989-4.org"
     }
   ],
   "agents": [
@@ -95,6 +95,14 @@
       "by": null,
       "ref": null,
       "text": "design round rerun: no nested Agent tool here, so the round agent ran at the Architect setting (opus/high) and did the Architect work itself; Sonnet round c3ce938 reverted in 540235b at the user's choice",
+      "path": null
+    },
+    {
+      "at": "2026-10-29T00:12:22Z",
+      "kind": "note",
+      "by": null,
+      "ref": "seam/page-actions",
+      "text": "scoped re-run (seam/page-actions) at plan: ask 4 added page-spec \u00a7 A button sends a visitor message; its pending test now cites it; row's scenarios cell filled",
       "path": null
     }
   ],

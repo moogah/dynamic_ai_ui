@@ -1,11 +1,12 @@
 :PROPERTIES:
 :ID: ask-cycle-1793231989-1
 :KIND: decision
-:STATUS: open
+:STATUS: applied
 :RAISED_BY: orchestrator
 :REF: design.org § Open Questions Q1
 :HAPPENED: no
 :BLOCKS: plan
+:APPLIED_VIA: design.org D10
 :END:
 #+TITLE: Should the first build's allowlist hold only a free keyless data source, or a keyless one and one that needs a secret key?
 
