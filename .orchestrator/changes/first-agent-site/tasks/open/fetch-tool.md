@@ -2,7 +2,8 @@
 task_name: fetch-tool
 description: "The allowlisted fetch tool on the owner's server: allowlist checks, connection-time address check, secrets, trimming, and the data kept in the page spec"
 change: first-agent-site
-status: ready
+status: needs_review
+merge_commit: 18cdfe1a59e72da471c19ab6391a04f763fb5fc1
 task_class: feature
 on_critical_path: true
 
@@ -72,4 +73,28 @@ Run `npx vitest run --reporter=junit --passWithNoTests` and report the last 10 l
 
 ## Observations
 
+- The default transport is not an undici dispatcher: `server/fetchTool.ts` `publicOnlyFetch` uses `node:http`/`node:https` with a `lookup` hook that refuses any non-public address (a `net.BlockList` of private, loopback, link-local, CGNAT, documentation, multicast/reserved, IPv4-mapped, ULA ranges) as the connection is made; an IP-literal host, which gets no lookup, is checked before the request. Why: `undici` is not in package.json, the copy in node_modules is jsdom's 8.12.3 while Node 22 bundles 6.23.0, so pairing it with the global fetch was a version gamble. Evidence: the strengthened test fails ("expected undefined to be true") with the lookup check removed, and passes with it.
+- Strengthened "refuses an allowlisted host whose address is not public, before any request reaches it" as the task asked: it now also asserts the result text matches /not a public address/ and names localhost, 127.0.0.1 or ::1. Nothing else it asserts changed.
+- `ToolContext.fetchUrl` changed from `(input, store) => Promise<content>` to `(input) => Promise<FetchOutcome>` (`src/agent/tools.ts`, defaulting to `fetchThroughServer`, POST `/api/fetch`). `runTool` stores the data through `runPageTool(..., "set_data", ...)` and returns the view, so the store edit and the tool result are built in one place. The "fetch_url is not available on this page yet" text is gone; `AllowlistEntry`/`FetchLike` moved to `server/fetchTool.ts` and are re-exported from `server/app.ts`.
+- Choices the task left open: the model's view is cut at 20,000 characters, with the note `[trimmed: the response is N characters; the last M were left out]`. Redirects are followed by hand for up to 5 hops, each hop re-checked and getting only its own host's secret. A non-2xx answer is a tool error (body trimmed to 2,000 characters) and stores no data. Secrets are scrubbed, both raw and JSON-escaped, from the body, the view and error texts. A JSON content type is parsed and anything else is kept as text.
+- No pending test outside the list started passing. "fetches the forecast ... draws a line chart" and "leaves every tool call of a stopped turn answered" stay `it.fails` and green.
+- thought: the whole response is read into memory with no cap. A cap would bound what a hostile allowlisted host could make the server hold.
+
 ## Discoveries
+
+- discovery_id: disc-fetch-tool-1
+  class: dead-branch
+  description: seam/allowlist's note proposes "an undici dispatcher with a lookup", and test/support/site.ts routes requests that name a `dispatcher` to the real fetch. The implemented transport is node:http(s) with a lookup hook, so that routing branch is never taken. undici is not a declared dependency (only jsdom's transitive 8.12.3, against Node 22's bundled 6.23.0).
+  affected_seam: seam/allowlist
+  kind: question
+  severity: low
+  evidence: server/fetchTool.ts publicOnlyFetch; test/support/site.ts routeBrowserTo (`if (init && "dispatcher" in init) return realFetch(input, init);`)
+  recommendation: Keep the row's statement and drop "undici dispatcher" from its note. Either remove the harness's dispatcher branch or leave it as harmless.
+- discovery_id: disc-fetch-tool-2
+  class: invariant-gap
+  description: The loop's chat line for each tool call shows the whole tool result content (`${call.name}: ${result.content}` in src/agent/loop.ts). A fetch therefore puts up to 20,000 characters of response into the chat log on every fetch.
+  affected_seam: seam/loop-state
+  kind: issue
+  severity: low
+  evidence: src/agent/loop.ts send(), say({ role: "tool", text: ... result.content })
+  recommendation: Show a one-line summary per tool call in the chat (name, ok or error, the first line of the result). This is outside this task's scope.

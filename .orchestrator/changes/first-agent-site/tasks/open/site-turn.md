@@ -2,7 +2,7 @@
 task_name: site-turn
 description: "The page, its page store and renderer, the page-spec tools, the browser loop and the server's model relay: one visitor message runs a turn that edits the page"
 change: first-agent-site
-status: needs_review
+status: done
 merge_commit: 9bf914834cc35822515c8f77afe559e1fc36b2a7
 task_class: feature
 on_critical_path: true

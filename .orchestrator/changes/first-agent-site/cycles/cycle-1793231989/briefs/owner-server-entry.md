@@ -1,0 +1,73 @@
+# Brief: Implementor, task owner-server-entry (change first-agent-site, cycle cycle-1793231989)
+
+You are the Implementor for one task. Do exactly this task; do not add scope. Reference material below is to be pressure-tested, not deferred to: a seam row was written before any code existed, and if the code wants something else, implement what it needs and record a push-back in `## Discoveries`.
+
+## Where things are
+
+- Worktree (yours; already created, on branch `task-owner-server-entry-20261029-003429`, based on the integration branch with the tasks site-turn and fetch-tool merged, so `src/`, `server/app.ts` and `server/fetchTool.ts` exist): `/home/user/dynamic_ai_ui/.worktrees/task-owner-server-entry-20261029-003429`. Work and commit only here. Do not create worktrees; do not touch the main checkout `/home/user/dynamic_ai_ui` except the one task file named below. Other Implementors work in parallel on other tasks of the same files' neighbourhood; stay inside your task's scope so merges stay clean.
+- Task file (read it in full first; it holds the summary, the cited seam rows verbatim, implementation steps, the pending tests to promote, out-of-scope): `/home/user/dynamic_ai_ui/.orchestrator/changes/first-agent-site/tasks/open/owner-server-entry.md`. You append `## Observations` and `## Discoveries` to that file by this absolute path and NEVER commit it.
+- Design (D1-D13, all seam rows): `docs/changes/first-agent-site/design.org` in your worktree. Intent `docs/changes/first-agent-site/intent.org`; specs `docs/specs/page-spec.org`, `agent-loop.org`, `data-fetch.org`; vocabulary `docs/glossary.org` (use its terms; avoid the words it lists under Avoid). Do not modify anything under `docs/`.
+- Tests already exist (pending ones are `it.fails`): `test/page-spec.test.ts`, `test/agent-loop.test.ts`, `test/data-fetch.test.ts`, harness `test/support/site.ts` and `load.ts`. Read `test/support/site.ts` first. The code under `src/` and `server/` was written by the previous tasks; read what you touch before changing it. Scaffold in place; node_modules resolves from the parent directory.
+- Report path (orchestrator only): `/home/user/dynamic_ai_ui/.orchestrator/changes/first-agent-site/cycles/cycle-1793231989/reports/owner-server-entry.md`
+- Your scratch directory (all scratch files only here): `/tmp/claude-0/-home-user-dynamic-ai-ui/83c9dc72-b79d-548e-93d1-78d71909ad0d/scratchpad/owner-server-entry/`
+
+## What this task is
+
+
+Make the site runnable for the owner (D1, D8, D10): a small Node entry that reads the allowlist file and the environment (the Claude key, each keyed host's secret), calls `createApp`, and serves the built page; Vite's dev server in front of it in development; the allowlist file the first build ships with Open-Meteo (no key) and one keyed service with a free key, chosen by the Implementor, its secret named by an environment variable.
+
+## Cited seams
+
+The rows are in the task file under "Cited seams". Relevant decisions are in design.org.
+
+## Cited scenarios (text from docs/specs/) and coverage rows
+
+
+(none cited)
+
+(Status "cited" means a test cites it; those tests are pending `it.fails` until promoted.)
+
+## Verification (run in your worktree, in the foreground, once, before the commit)
+
+`npx vitest run --reporter=junit --passWithNoTests` (junit report on stdout). Promote (drop `.fails` from) exactly the tests the task file's Verification section lists; every other `it.fails` stays pending and green. A pending test outside the list that starts passing is promoted too and named in `## Observations`. Baseline at HEAD: 23 tests, 0 failures. Never leave a test run in the background; report once.
+
+## Rules (from the Implementor role)
+
+- One commit on your branch, message `Implement task owner-server-entry: <description>`, ending with the lines:
+  Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+  Claude-Session: https://claude.ai/code/session_01P9sjxVDXNx2YmGcBRhu2oh
+  The commit holds code and test changes only, never the task file, the report or `## Observations`/`## Discoveries`.
+- Premises: before writing code check the task's claims against the worktree (names, signatures, harness expectations). A wrong claim the task can absorb is corrected in the work and noted in `## Observations`. A wrong claim that changes what the task should do, or a test you did not write that fails and can only be fixed by changing behaviour a cited row/scenario states: stop and hand back `blocked owner-server-entry: premise wrong, <claim>`. If a test you did not write is wrong without changing the stated behaviour, change it, say so in `deviation_summary`, hand back with `deviated`, and add a `## Discoveries` entry (class: deviation) quoting the assertion before and after.
+- Before the commit, re-read the prose beside each change (comments, docstrings, error texts, the cited sentences) and grep the tree for each name or message the task changed; fix any sentence the work made untrue.
+- Shared machine: never `git stash` (commit instead); no `git worktree prune`/`gc`/`remove`; scratch files only in your scratch directory; no fixed ports/sockets (a server you start is named after your branch and on a free port you chose); start no GUI or interactive program; stop only processes you started.
+- Never create task files. A defect outside the task goes in `## Discoveries` and `candidate_tasks` in the report. Do not expand scope silently (the task file's Out-of-scope list stands).
+- `## Observations`: departures from the prescribed approach with evidence, weak tests, ambiguities resolved, speculative needs as one `thought:` line. Defects outside the task are NOT observations; they are `## Discoveries`.
+- `## Discoveries` format (append to the task file), entries like: discovery_id: disc-owner-server-entry-1 / class: one of shape-fragmentation, vocabulary-mismatch, responsibility-leakage, dead-branch, interface-drift, mutation, invariant-gap, spec-signal, deviation, scope-question, duplication / description / affected_seam / kind: issue or question / severity / evidence / recommendation. Push-backs on seam rows go here too.
+- If the task body itself needs revision before it can be implemented, stop and hand back `blocked owner-server-entry: <what you observed and what it blocks>`.
+
+## Structured report (write to the report path above; for the orchestrator only)
+
+```yaml
+task_name: owner-server-entry
+commit_sha: <sha>
+test_output_tail: |
+  <last 10 lines of the test command output>
+observations_count: <n>
+discoveries_count: <n>
+candidate_tasks:
+  - <discovery_id of each defect outside the task>
+push_backs:
+  - seam: <seam-id>
+    summary: <one line>
+deviation_summary: <optional one line>
+```
+
+## Hand-back
+
+Your last act is to hand back exactly one line, at most 200 characters, nothing else, no paths, no report text:
+
+    done owner-server-entry <commit-sha>
+    done owner-server-entry <commit-sha> deviated
+    done owner-server-entry <commit-sha> candidates=<n>
+    blocked owner-server-entry: <what you observed and what it blocks, one clause>
+    failed owner-server-entry: <why, one clause>

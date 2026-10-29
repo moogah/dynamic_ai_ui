@@ -8,3 +8,59 @@
 :FILES: src/page/catalog.ts
 :END:
 "form/button" is counted as one type in design D9 and page-spec § The first component catalog, but the page spec needs two names, form and button, so the catalog has twelve. Settle at integrate's conformance check: say "twelve types" or merge them into one.
+
+* issue (hardening): The chat shows the whole fetched view of every fetch
+:PROPERTIES:
+:REF: disc-fetch-tool-2
+:SEVERITY: low
+:FILES: src/agent/loop.ts
+:END:
+The chat line for each tool call prints the whole tool result, so a fetch puts up to 20,000 characters of the response into the chat log. The page and the fetch still work; the chat is cluttered.
+
+* question (hardening): The fetch transport is a node:http(s) lookup check, not the undici dispatcher the allowlist row's note names
+:PROPERTIES:
+:REF: disc-fetch-tool-1
+:SEVERITY: low
+:FILES: server/fetchTool.ts, test/support/site.ts
+:END:
+The row's statement holds (refusal at connection time) but its note and the harness's dispatcher branch name a mechanism that is not used. Settle at integrate's conformance check: correct the note, and drop or keep the unused harness branch.
+
+* issue (hardening): An empty model reply is kept in the conversation and every later turn of the visit then fails
+:PROPERTIES:
+:REF: cycles/cycle-1793231989/reviews/site-turn.md#1
+:SEVERITY: medium
+:FILES: src/agent/loop.ts:92
+:END:
+If the model ends a reply with no content, the loop keeps an empty assistant message, the Messages API rejects every later request, and the page stays in the error state until a reload. Needs a model reply with no blocks, rare in ordinary use; the fix is to skip or reject an empty reply and add a test of a second turn after it.
+
+* issue (hardening): Component ids named like Object.prototype members give false successes or an unhelpful error
+:PROPERTIES:
+:REF: cycles/cycle-1793231989/reviews/site-turn.md#2
+:SEVERITY: low
+:FILES: src/page/tools.ts:97, src/page/bindings.ts:39
+:END:
+An id such as __proto__ or constructor is answered as put or removed when nothing changed, and a parent named toString throws instead of saying the parent does not exist. Unlikely ids; look components up with Object.hasOwn or a Map.
+
+* issue (hardening): Integer-like component ids reorder siblings
+:PROPERTIES:
+:REF: cycles/cycle-1793231989/reviews/site-turn.md#3
+:SEVERITY: low
+:FILES: src/page/spec.ts:36
+:END:
+Object key order puts integer-like ids first and ascending, so ids intro, 10, 2 draw as 2, 10, intro. Matters only when the assistant numbers components and puts them out of order; keep sibling order explicitly.
+
+* issue (hardening): Changing a container into a non-container type leaves its children in the page spec but undrawn
+:PROPERTIES:
+:REF: cycles/cycle-1793231989/reviews/site-turn.md#4
+:SEVERITY: low
+:FILES: src/page/tools.ts:113
+:END:
+Putting a card that has children again as a heading succeeds, the model is still told the children exist, and the visitor cannot see them. Refuse the edit with a tool error naming the children.
+
+* issue (hardening): The model relay rejects instead of answering when the Messages API cannot be reached
+:PROPERTIES:
+:REF: cycles/cycle-1793231989/reviews/site-turn.md#6
+:SEVERITY: low
+:FILES: server/app.ts:75
+:END:
+A network failure to the Messages API rejects the handler's promise, so what the visitor sees depends on the Node entry. Answer 502 with a plain error. Applies only when the model is unreachable.
