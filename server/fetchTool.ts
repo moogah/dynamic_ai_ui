@@ -4,6 +4,7 @@
 // time a host whose address is not public. A keyed host's secret goes, as its header, only on
 // requests to that host, and is removed from everything returned. The result is the whole
 // response, for the page spec's data, and the view the model reads, cut to a size limit.
+// The page's images come through here too (fetchImage), under the same checks and transport.
 import { BlockList, isIP } from "node:net";
 import { lookup as dnsLookup, type LookupAddress } from "node:dns";
 import { request as httpRequest, type IncomingMessage } from "node:http";
@@ -37,6 +38,33 @@ export async function fetchForTool(input: unknown, options: FetchToolOptions): P
   }
   if (typeof url !== "string") return { ok: false, error: "fetch_url needs a 'url'" };
 
+  const fetched = await fetchAllowed(url, options, "application/json, text/*;q=0.9, */*;q=0.5");
+  if (!fetched.ok) return fetched;
+  const { response, url: final, secrets } = fetched;
+  try {
+    const body = scrub(await response.text(), secrets);
+    if (!response.ok) {
+      return { ok: false, error: `${final.hostname} answered ${response.status}: ${cut(body, 2_000)}` };
+    }
+    const data = parse(body, response.headers.get("content-type") ?? "");
+    const view =
+      `Fetched ${final.href} (status ${response.status}); the whole response is stored in the page ` +
+      `data as '${name}'.\n` +
+      cut(body, VIEW_LIMIT);
+    return { ok: true, name, data, view };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return { ok: false, error: `fetching ${final.hostname} failed: ${scrub(reason, secrets)}` };
+  }
+}
+
+export type Allowed = { ok: true; response: Response; url: URL; secrets: string[] } | { ok: false; error: string };
+
+// One GET under the allowlist, shared by the fetch tool and the image route: the host is checked
+// on the parsed URL before the request and again on every redirect, which is followed by hand;
+// a keyed host's secret goes, as its header, only on requests to that host. The response is the
+// last hop's, unread; `secrets` are what the caller removes from anything it returns.
+export async function fetchAllowed(url: string, options: FetchToolOptions, accept: string): Promise<Allowed> {
   const allowlist = options.allowlist.map((entry) => ({ ...entry, host: entry.host.toLowerCase() }));
   const allowed = allowlist.length ? `the allowed hosts are ${allowlist.map((e) => e.host).join(", ")}` : "no hosts are allowed";
   const secrets = allowlist.flatMap((entry) => (entry.secret?.value ? [entry.secret.value] : []));
@@ -58,7 +86,7 @@ export async function fetchForTool(input: unknown, options: FetchToolOptions): P
         const what = hop === 0 ? "" : `the request was redirected to ${current.hostname}, which was not followed: `;
         return { ok: false, error: `${what}${current.hostname} is not on the allowlist; ${allowed}` };
       }
-      const headers: Record<string, string> = { accept: "application/json, text/*;q=0.9, */*;q=0.5" };
+      const headers: Record<string, string> = { accept };
       if (entry.secret) headers[entry.secret.header] = entry.secret.value;
       const response = await transport(current.href, { method: "GET", headers, redirect: "manual" });
 
@@ -72,21 +100,34 @@ export async function fetchForTool(input: unknown, options: FetchToolOptions): P
         }
         continue;
       }
-
-      const body = scrub(await response.text(), secrets);
-      if (!response.ok) {
-        return { ok: false, error: `${current.hostname} answered ${response.status}: ${cut(body, 2_000)}` };
-      }
-      const data = parse(body, response.headers.get("content-type") ?? "");
-      const view =
-        `Fetched ${current.href} (status ${response.status}); the whole response is stored in the page ` +
-        `data as '${name}'.\n` +
-        cut(body, VIEW_LIMIT);
-      return { ok: true, name, data, view };
+      return { ok: true, response, url: current, secrets };
     }
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     return { ok: false, error: `fetching ${current.hostname} failed: ${scrub(reason, secrets)}` };
+  }
+}
+
+// An image for the page (seam/allowlist, design D8): fetched under the same allowlist and
+// transport as the fetch tool, returned only when it is a raster image that holds no secret.
+// SVG is refused, since it is text the host writes and could carry anything.
+export async function fetchImage(url: string, options: FetchToolOptions): Promise<{ ok: true; bytes: ArrayBuffer; type: string } | { ok: false; error: string }> {
+  const fetched = await fetchAllowed(url, options, "image/*");
+  if (!fetched.ok) return fetched;
+  const { response, url: final, secrets } = fetched;
+  const type = (response.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+  if (!response.ok || !type.startsWith("image/") || type === "image/svg+xml") {
+    void response.body?.cancel().catch(() => {});
+    return { ok: false, error: `${final.hostname} did not answer with an image` };
+  }
+  try {
+    const bytes = await response.arrayBuffer();
+    const raw = Buffer.from(bytes);
+    if (secrets.some((secret) => raw.includes(secret))) return { ok: false, error: `${final.hostname} answered with a secret in the image` };
+    return { ok: true, bytes, type };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return { ok: false, error: `fetching ${final.hostname} failed: ${scrub(reason, secrets)}` };
   }
 }
 

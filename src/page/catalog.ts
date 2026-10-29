@@ -5,6 +5,14 @@
 // says is drawn as text.
 import { isBinding, type Component, type ComponentType } from "./spec";
 
+// Where the page gets an image (design D8): the owner's server fetches it under its allowlist,
+// so an image's address is never loaded by the page itself.
+export const IMAGE_PATH = "/api/image";
+
+export function imageThroughServer(src: string): string {
+  return `${IMAGE_PATH}?src=${encodeURIComponent(src)}`;
+}
+
 export type PropKind = "string" | "number" | "string or number" | "boolean" | "array" | "object";
 
 export interface PropSpec {

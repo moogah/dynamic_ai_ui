@@ -19,7 +19,7 @@ const forecast = {
 };
 
 describe("one fetch tool on the owner's server", () => {
-  it.fails("fetches the forecast from the allowlisted weather host and draws a line chart of its series (Scenario: data-fetch § Fetch then display; page-spec § Data shown as a chart)", async () => {
+  it("fetches the forecast from the allowlisted weather host and draws a line chart of its series (Scenario: data-fetch § Fetch then display; page-spec § Data shown as a chart)", async () => {
     const hosts = new FakeHosts().on(WEATHER, () => Response.json(forecast));
     const model = new FakeModel()
       .reply(toolUse("toolu_1", "fetch_url", { url: `https://${WEATHER}/forecast?city=lisbon`, name: "lisbon" }))

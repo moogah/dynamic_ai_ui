@@ -15,6 +15,9 @@ const styles = `
   .card { border: 1px solid #ccc; border-radius: 0.5rem; padding: 1rem; }
   .tile { display: inline-flex; flex-direction: column; border: 1px solid #ccc; border-radius: 0.5rem; padding: 1rem; }
   .tile-value { font-size: 2rem; }
+  .chart svg { width: 100%; max-width: 32rem; height: auto; }
+  .image img { max-width: 100%; }
+  .form { display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start; }
   .chat-log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; }
   .chat-log .visitor { align-self: flex-end; background: #e8f0fe; padding: 0.5rem; border-radius: 0.5rem; }
   .chat-log .assistant { background: #f1f1f1; padding: 0.5rem; border-radius: 0.5rem; }
@@ -42,7 +45,8 @@ export function App() {
     <div className="site">
       <style>{styles}</style>
       <main>
-        <PageView store={store} />
+        {/* A press or submission is a visitor message as if typed; during a turn the loop refuses it. */}
+        <PageView store={store} send={(message) => void loop.send(message)} />
       </main>
       <aside>
         <div role="status" className="chat-status">
