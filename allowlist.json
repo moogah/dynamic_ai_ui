@@ -1,0 +1,8 @@
+{
+  "comment": "The hosts the fetch tool may call. To add a source, add an entry with its host; for a host that needs a key, add \"secret\" with the request header the key goes in and the name of the environment variable that holds it, and set that variable before starting the server.",
+  "hosts": [
+    { "host": "api.open-meteo.com" },
+    { "host": "geocoding-api.open-meteo.com" },
+    { "host": "api.football-data.org", "secret": { "header": "X-Auth-Token", "env": "FOOTBALL_DATA_API_KEY" } }
+  ]
+}

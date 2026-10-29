@@ -1,3 +1,5 @@
 .worktrees/
 node_modules/
 .orchestrator/changes/*/state.lock
+dist/
+dist-server/
