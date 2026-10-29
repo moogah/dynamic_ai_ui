@@ -2,7 +2,7 @@
 task_name: owner-server-entry
 description: "The runnable site: the Node entry, the Vite build and dev setup, and the shipped allowlist file with one keyless and one keyed source"
 change: first-agent-site
-status: needs_review
+status: done
 merge_commit: 328e16e8039530618654cde8fc9c5ea7b9413969
 task_class: infrastructure
 on_critical_path: false

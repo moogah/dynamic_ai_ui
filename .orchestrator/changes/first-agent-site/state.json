@@ -175,14 +175,14 @@
       "worktree_path": ".worktrees/task-owner-server-entry-20261029-003429",
       "branch_name": "task-owner-server-entry-20261029-003429",
       "agent_task_id": null,
-      "status": "needs_review",
+      "status": "done",
       "merge_commit": "328e16e8039530618654cde8fc9c5ea7b9413969",
       "after_snapshot": ".orchestrator/changes/first-agent-site/after-owner-server-entry-20261029-merge5.txt",
       "regression_detected": false,
       "worktree_removed": true,
-      "review_mode": null,
-      "findings_path": null,
-      "findings_count": null,
+      "review_mode": "delegated",
+      "findings_path": ".orchestrator/changes/first-agent-site/cycles/cycle-1793231989/reviews/owner-server-entry.md",
+      "findings_count": 3,
       "followups_created": [],
       "dependents_repointed": [],
       "implementor_report_path": ".orchestrator/changes/first-agent-site/cycles/cycle-1793231989/reports/owner-server-entry.md",
@@ -201,7 +201,7 @@
       "rejections": 0,
       "started_at": "2026-10-29T00:34:30Z",
       "completed_at": "2026-10-29T00:39:04Z",
-      "reviewed_at": null,
+      "reviewed_at": "2026-10-29T00:46:18Z",
       "created_at": "2026-10-29T00:15:14Z",
       "task_name": "owner-server-entry",
       "task_file": ".orchestrator/changes/first-agent-site/tasks/open/owner-server-entry.md",
@@ -587,6 +587,14 @@
       "ref": "chart-and-actions",
       "text": "chart-and-actions review 2-7 routed hardening (UI and legibility, no main-path break)",
       "path": ".orchestrator/changes/first-agent-site/hardening.org"
+    },
+    {
+      "at": "2026-10-29T00:46:18Z",
+      "kind": "inline-fix",
+      "by": null,
+      "ref": "owner-server-entry",
+      "text": "owner-server-entry review 1 already fixed in fbce4f8; 2 (malformed escape) and 3 (malformed Host) crash the Node entry, fixed in 6efb765 with a test that drives the real entry and failed before",
+      "path": null
     }
   ],
   "cycle_log": {
@@ -610,12 +618,13 @@
       "passed_at": "2026-10-29T00:15:30Z"
     },
     "execute": {
-      "passed": false,
+      "passed": true,
       "checks": {
-        "all_tasks_executed_or_stopped": false,
-        "all_reviews_completed": false,
-        "no_orphan_in_progress": false
-      }
+        "all_tasks_executed_or_stopped": true,
+        "all_reviews_completed": true,
+        "no_orphan_in_progress": true
+      },
+      "passed_at": "2026-10-29T00:46:23Z"
     },
     "integrate": {
       "passed": false,
