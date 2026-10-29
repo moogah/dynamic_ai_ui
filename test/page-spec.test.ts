@@ -12,7 +12,7 @@ afterEach(closeSite);
 const card = (id: string, title: string) => ({ id, type: "card", parent: "content", props: { title, body: "From the assistant." } });
 
 describe("the page is drawn from the page spec", () => {
-  it.fails("shows the skeleton, a header area and an empty content area, beside the chat (Scenario: page-spec § The skeleton on first load)", async () => {
+  it("shows the skeleton, a header area and an empty content area, beside the chat (Scenario: page-spec § The skeleton on first load)", async () => {
     const site = await openSite({ model: new FakeModel() });
 
     expect(site.drawn("header")).not.toBeNull();
@@ -23,7 +23,7 @@ describe("the page is drawn from the page spec", () => {
     expect(site.status()).toContain("idle");
   });
 
-  it.fails("draws a card the assistant adds during a turn and leaves the rest of the page in place (Scenario: page-spec § An edit appears without a reload)", async () => {
+  it("draws a card the assistant adds during a turn and leaves the rest of the page in place (Scenario: page-spec § An edit appears without a reload)", async () => {
     const model = new FakeModel()
       .reply(toolUse("toolu_1", "put_components", { components: [card("c1", "Welcome")] }))
       .reply(text("Added a card."));
@@ -44,7 +44,7 @@ describe("the page is drawn from the page spec", () => {
 });
 
 describe("only catalog types are drawn", () => {
-  it.fails("rejects a component of a type the catalog lacks, naming the allowed types, and changes nothing (Scenario: page-spec § An unknown type is rejected)", async () => {
+  it("rejects a component of a type the catalog lacks, naming the allowed types, and changes nothing (Scenario: page-spec § An unknown type is rejected)", async () => {
     const model = new FakeModel()
       .reply(
         toolUse("toolu_1", "put_components", {
@@ -68,7 +68,7 @@ describe("only catalog types are drawn", () => {
 
 describe("the page spec holds no markup", () => {
   // seam/catalog: a prop is drawn as what it says, never as markup.
-  it.fails("draws markup in a text component as plain text", async () => {
+  it("draws markup in a text component as plain text", async () => {
     const model = new FakeModel()
       .reply(toolUse("toolu_1", "put_components", { components: [{ id: "x1", type: "text", parent: "content", props: { text: "<b>bold</b><img src=x>" } }] }))
       .reply(text("Added the text."));
@@ -101,7 +101,7 @@ describe("the page spec holds no markup", () => {
 });
 
 describe("the page spec lasts for the visit only", () => {
-  it.fails("returns the skeleton on a reload after the page was shaped (Scenario: page-spec § A reload returns the skeleton)", async () => {
+  it("returns the skeleton on a reload after the page was shaped (Scenario: page-spec § A reload returns the skeleton)", async () => {
     const model = new FakeModel()
       .reply(toolUse("toolu_1", "put_components", { components: [card("c1", "Welcome")] }))
       .reply(text("Added a card."));
