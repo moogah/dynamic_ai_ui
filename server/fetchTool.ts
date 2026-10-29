@@ -47,10 +47,13 @@ export async function fetchForTool(input: unknown, options: FetchToolOptions): P
       return { ok: false, error: `${final.hostname} answered ${response.status}: ${cut(body, 2_000)}` };
     }
     const data = parse(body, response.headers.get("content-type") ?? "");
-    const view =
+    // The address too: a host can echo the secret into a redirect it answers with.
+    const view = scrub(
       `Fetched ${final.href} (status ${response.status}); the whole response is stored in the page ` +
-      `data as '${name}'.\n` +
-      cut(body, VIEW_LIMIT);
+        `data as '${name}'.\n` +
+        cut(body, VIEW_LIMIT),
+      secrets,
+    );
     return { ok: true, name, data, view };
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
@@ -87,7 +90,13 @@ export async function fetchAllowed(url: string, options: FetchToolOptions, accep
         return { ok: false, error: `${what}${current.hostname} is not on the allowlist; ${allowed}` };
       }
       const headers: Record<string, string> = { accept };
-      if (entry.secret) headers[entry.secret.header] = entry.secret.value;
+      if (entry.secret) {
+        // A secret never travels in clear text, whether the address asked for http or a redirect went down to it.
+        if (current.protocol !== "https:") {
+          return { ok: false, error: `${current.hostname} needs its key, which is sent over https only; ${current.href.split("?")[0]} is not https` };
+        }
+        headers[entry.secret.header] = entry.secret.value;
+      }
       const response = await transport(current.href, { method: "GET", headers, redirect: "manual" });
 
       if (response.status >= 300 && response.status < 400 && response.headers.has("location")) {

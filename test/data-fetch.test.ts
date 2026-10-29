@@ -226,3 +226,38 @@ describe("the server's own address check", () => {
     }
   });
 });
+
+describe("a keyed host's secret stays on the server", () => {
+  // Inline fixes after the review of fetch-tool (findings 2 and 3): the tool is driven
+  // directly with the scripted hosts, since the page shows only its result.
+  const SECRET = "data-api-secret-5f2a9c";
+  const allowlist = [{ host: "api.keyed.example", secret: { header: "X-Api-Key", value: SECRET } }];
+
+  it("does not return the secret when the host echoes it into a redirect address", async () => {
+    const { fetchForTool } = await load("/server/fetchTool");
+    const hosts = new FakeHosts().on("api.keyed.example", (request) => {
+      const url = new URL(request.url);
+      return url.pathname === "/start"
+        ? new Response(null, { status: 302, headers: { location: `/final?token=${request.headers.get("x-api-key")}` } })
+        : Response.json({ ok: 1 });
+    });
+    const outcome = await fetchForTool({ url: "https://api.keyed.example/start", name: "x" }, { allowlist, fetchData: hosts.fetch });
+    expect(outcome.ok).toBe(true);
+    expect(JSON.stringify(outcome)).not.toContain(SECRET);
+  });
+
+  it("sends the secret only over https: an http address, or a redirect down to http, is refused", async () => {
+    const { fetchForTool } = await load("/server/fetchTool");
+    const hosts = new FakeHosts().on("api.keyed.example", (request) =>
+      request.url.startsWith("https:")
+        ? new Response(null, { status: 301, headers: { location: "http://api.keyed.example/x" } })
+        : Response.json({ ok: 1 }),
+    );
+    const direct = await fetchForTool({ url: "http://api.keyed.example/now", name: "x" }, { allowlist, fetchData: hosts.fetch });
+    const downgraded = await fetchForTool({ url: "https://api.keyed.example/now", name: "x" }, { allowlist, fetchData: hosts.fetch });
+    expect(direct.ok).toBe(false);
+    expect(downgraded.ok).toBe(false);
+    expect(hosts.requests.filter((r) => r.url.startsWith("http:"))).toEqual([]);
+    expect(hosts.requests.every((r) => r.headers["x-api-key"] === SECRET && r.url.startsWith("https:"))).toBe(true);
+  });
+});
