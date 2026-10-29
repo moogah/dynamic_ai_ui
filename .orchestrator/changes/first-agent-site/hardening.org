@@ -1,0 +1,10 @@
+#+TITLE: Hardening list: first-agent-site
+#+OPTIONS: ^:{} -:nil
+
+* question (hardening): The catalog holds twelve type names where the design and the page-spec say eleven types
+:PROPERTIES:
+:REF: disc-site-turn-2
+:SEVERITY: low
+:FILES: src/page/catalog.ts
+:END:
+"form/button" is counted as one type in design D9 and page-spec § The first component catalog, but the page spec needs two names, form and button, so the catalog has twelve. Settle at integrate's conformance check: say "twelve types" or merge them into one.

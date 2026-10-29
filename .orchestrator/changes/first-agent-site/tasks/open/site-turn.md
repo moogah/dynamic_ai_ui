@@ -2,7 +2,8 @@
 task_name: site-turn
 description: "The page, its page store and renderer, the page-spec tools, the browser loop and the server's model relay: one visitor message runs a turn that edits the page"
 change: first-agent-site
-status: ready
+status: needs_review
+merge_commit: 9bf914834cc35822515c8f77afe559e1fc36b2a7
 task_class: feature
 on_critical_path: true
 
@@ -107,4 +108,19 @@ Run `npx vitest run --reporter=junit --passWithNoTests` and report the last 10 l
 
 ## Observations
 
+- Undo: `PageStore.beginTurn` and `PageStore.undo` are built (`src/page/store.ts`); the loop calls `beginTurn` as a turn starts. The Undo button is drawn but not wired, and `AgentLoop.stop` is a no-op: both are stop-and-undo's (D5 adds "offered between turns, not while one runs", which belongs with stop). Evidence: the two undo tests and the two stop tests stay pending and green.
+- The catalog has twelve type names for D9's "eleven types": "form/button" is two types, `form` and `button` (the tests use `type: "button"`). The key-figure tile is the type `tile`. Both named in the tool description the model reads.
+- Promoted outside the list: `test/data-fetch.test.ts` "refuses an allowlisted host whose address is not public, before any request reaches it". It passes vacuously: `fetch_url` answers an `is_error` result saying it is not available, and the test asserts only `is_error` and zero hits. See disc-site-turn-1. It stays promoted so fetch-tool inherits it as a live guard.
+- Ambiguity resolved: the skeleton's `header` (a `row`) and `content` (a `column`) have the parent `page` (`ROOT` in `src/page/spec.ts`); `put_components` refuses to replace them and `remove_component` refuses to remove them, and every new component must name an existing container as its parent (no cycles). No row states this; it keeps the skeleton drawable.
+- Ambiguity resolved: sibling order is the insertion order of the component map (a component put again keeps its place). The page spec carries no order field.
+- The snapshot (seam/page-snapshot) travels as a second text block of the visitor's user message, after the visitor's words; the chat log shows the words only. Tool results carry no snapshot.
+- The chat log also shows one line per tool call (`put_components: Put c1 (card).`), for the loop's visible mechanics; the status element shows the state label alone (plus the error text in the error state).
+- The claude-api skill's defaults (Opus, the SDK) are overridden by D7 (`claude-sonnet-5-5`) and by `createApp`'s `fetchModel` (a raw relay; no SDK in package.json). The server sends `max_tokens: 16000`, no `thinking` field (adaptive by default on Sonnet 5.5), `anthropic-version: 2023-06-01`.
+- A `send` while a turn runs is dropped and the Send button is disabled meanwhile; the prose says so in `src/agent/loop.ts`.
+- The commit's attribution lines follow the session's reminder (Claude Fable 5.1), not the brief's "Claude Opus 5.5"; the Claude-Session line is the same.
+- thought: the system prompt will need tuning once a real model drives the page; it is one constant in `server/app.ts`.
+
 ## Discoveries
+
+- discovery_id: disc-site-turn-1 / class: invariant-gap / description: the data-fetch test "refuses an allowlisted host whose address is not public" cannot tell a refused fetch from an unavailable fetch tool: it asserts `is_error` and zero hits only, so it passes while `fetch_url` is answered as unavailable / affected_seam: seam/allowlist / kind: issue / severity: low / evidence: `test/data-fetch.test.ts:115-139` passed at commit 711d33c with `runTool` returning "fetch_url is not available on this page yet" / recommendation: fetch-tool asserts the error names the address or host that was refused (as the off-list test asserts the allowed hosts), so the test holds only once the connection-time check exists.
+- discovery_id: disc-site-turn-2 / class: vocabulary-mismatch / description: D9 and page-spec § The first component catalog count "form/button" as one of eleven types, but the page spec needs two type names (`form`, `button`; the button test uses `type: "button"`), so the catalog holds twelve / affected_seam: seam/catalog / kind: question / severity: low / evidence: `src/page/catalog.ts` `componentTypes` has 12 entries / recommendation: the design round says "twelve types, form and button being two" or merges them into one type with a `fields` prop that may be empty.

@@ -58,7 +58,7 @@ Run `npx vitest run --reporter=junit --passWithNoTests` and report the last 10 l
 
 - test/data-fetch.test.ts: "refuses a host off the list with an error naming the allowed hosts, and makes no request (Scenario: data-fetch § A host not on the list is refused)"
 - test/data-fetch.test.ts: "does not follow a redirect from an allowlisted host to one off the list (Scenario: data-fetch § A redirect off the list is not followed)"
-- test/data-fetch.test.ts: "refuses an allowlisted host whose address is not public, before any request reaches it"
+- test/data-fetch.test.ts: "refuses an allowlisted host whose address is not public, before any request reaches it" (already promoted by site-turn, where it passes only because `fetch_url` answers "not available": strengthen it in this commit so it asserts the error names the refused host or address, and so it fails if the connection-time check is absent)
 - test/data-fetch.test.ts: "adds the host's secret to the request and keeps it from the model and the page"
 - test/data-fetch.test.ts: "gives the model a trimmed response that says it was trimmed and how much was left out (Scenario: data-fetch § A trimmed result says so)"
 - test/data-fetch.test.ts: "never sends the model the whole response, in the tool result or with the next message"
