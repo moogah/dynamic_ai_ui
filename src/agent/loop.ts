@@ -88,10 +88,18 @@ export function createAgentLoop(options: LoopOptions): AgentLoop {
 
   // A turn stopped while the model was answering ends on a user message (the visitor's, or the
   // last tool results); the next visitor message joins it, so the roles keep alternating.
+  // The model is told, once, that the turn it was part of was stopped, so it does not carry out
+  // the request the visitor cancelled (the conversation is never rewritten, design D4).
+  let stoppedNote = false;
   const addVisitorMessage = (words: string) => {
+    const blocks = visitorBlocks(words);
+    if (stoppedNote) {
+      blocks.unshift({ type: "text", text: "The visitor stopped the previous turn before it finished; do not carry on with it unless asked." });
+      stoppedNote = false;
+    }
     const last = conversation[conversation.length - 1];
-    if (last?.role === "user") last.content = [...last.content, ...visitorBlocks(words)];
-    else conversation.push({ role: "user", content: visitorBlocks(words) });
+    if (last?.role === "user") last.content = [...last.content, ...blocks];
+    else conversation.push({ role: "user", content: blocks });
   };
 
   async function send(message: string): Promise<void> {
@@ -143,6 +151,7 @@ export function createAgentLoop(options: LoopOptions): AgentLoop {
     if (current === null || current.controller.signal.aborted) return;
     current.controller.abort();
     turn = null;
+    stoppedNote = true;
     if (current.running) {
       const { calls, results } = current.running;
       const answered = new Set(results.map((r) => r.tool_use_id));

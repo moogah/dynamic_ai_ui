@@ -203,3 +203,23 @@ describe("a reply with nothing in it", () => {
     expect(messages.map((m) => m.role)).toEqual(["user"]);
   });
 });
+
+describe("the model is told a turn was stopped", () => {
+  // Inline fix after the review of stop-and-undo: a turn stopped during a model request left
+  // the visitor's cancelled request in the conversation as a live one.
+  it("tells the model, with the next visitor message, that the previous turn was stopped", async () => {
+    const model = new FakeModel();
+    model.held();
+    const site = await openSite({ model });
+    site.say("remove every component from the page");
+    await site.showsState("calling the model");
+    site.press("Stop");
+    await site.showsState("awaiting the visitor");
+    model.reply(text("Hi added."));
+
+    site.say("add a heading that says Hi");
+    await site.settled("Hi added.");
+
+    expect(model.newest(1).toLowerCase()).toContain("stopped");
+  });
+});
