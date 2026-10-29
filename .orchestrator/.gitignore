@@ -1,0 +1,7 @@
+# Written by state.py init. Test outputs and scratch stay out of git; every other
+# orchestration artifact (inbox, cycles, state.json, handshakes) is tracked.
+baseline-*.txt
+after-*.txt
+*.tmp
+state.lock
+state.json.pre-migrate-*

@@ -1,0 +1,35 @@
+:PROPERTIES:
+:ID: ask-cycle-1793231989-3
+:KIND: decision
+:STATUS: open
+:RAISED_BY: orchestrator
+:REF: design.org § Open Questions Q3
+:HAPPENED: no
+:BLOCKS: plan
+:END:
+#+TITLE: Should the code that runs each turn live in the visitor's browser, or on the owner's server?
+
+* About
+
+Each turn, some code sends the conversation to the model, carries out the edits and data fetches the model asks for, sends back the results, and repeats until the reply is finished; it also tracks what the visitor sees as progress ("thinking", "fetching data"). Either way the Claude key stays on the server and the page's edits are made in the browser. The system prompt is the fixed instruction the server sends the model with every request.
+
+* What happened
+
+Nothing yet; this is a design-round question (Q3 in design.org). The design is drafted with this code in the browser and the server as a thin relay that adds the key and fixes the model, system prompt and tool list; the automated tests act as a visitor and hold for either placement. Moving it to the server rewrites five parts of the design before building.
+
+* Options
+
+- Run it on the server :: The server alone decides every step and the browser only applies edits it is told to; how a turn progresses is split between server and page, so it is harder to watch in one place.
+- Keep it in the browser :: Every step of a turn is visible in the page; the server still fixes the model, system prompt and tool list, so a visitor cannot change them.
+
+* Recommendation
+
+- Keep it in the browser :: The earlier experiment (E3) found both cost the same round trips and both keep the key safe; the browser keeps every step visible, which is the experiment's aim. Nothing observed argues for the server.
+
+* If unanswered
+
+Plan drafts nothing; the change waits for this answer.
+
+* Answer
+
+# An option label from above, or your own words; everything below this line is read as your answer.

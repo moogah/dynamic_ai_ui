@@ -1,0 +1,35 @@
+:PROPERTIES:
+:ID: ask-cycle-1793231989-1
+:KIND: decision
+:STATUS: open
+:RAISED_BY: orchestrator
+:REF: design.org § Open Questions Q1
+:HAPPENED: no
+:BLOCKS: plan
+:END:
+#+TITLE: Should the first build's allowlist hold only a free keyless data source, or a keyless one and one that needs a secret key?
+
+* About
+
+The allowlist is the owner's list of hosts the assistant may fetch data from; for a host that needs a secret key, the server adds the key to each request so the visitor and the model never see it. This question picks which real data sources the first build ships with on its allowlist, which is what a visitor can ask about on day one (for example, weather from Open-Meteo, which needs no key).
+
+* What happened
+
+Nothing yet; this is a design-round question (Q1 in design.org). The automated tests use made-up hosts and check the secret handling either way, so the answer changes only what the first build ships and whether it is tried against a real keyed source. The design assumes the key is sent in a request header; a source that takes its key in the address adds that form.
+
+* Options
+
+- One keyless and one keyed source :: The first build ships two sources, so adding a secret is tried against a real service from the start; you name the keyed service, or let the implementer pick one with a free key, and its key must be set on the server before it works.
+- Only a keyless source :: The first build ships one source (for example Open-Meteo weather) with nothing to configure; secret handling is covered by the automated tests only, until you add a keyed source to the allowlist yourself.
+
+* Recommendation
+
+- One keyless and one keyed source :: Every data-fetch requirement then runs against a real service; nothing has been observed to favour either, so this rests on coverage, not on a failure.
+
+* If unanswered
+
+Plan drafts nothing; the change waits for this answer.
+
+* Answer
+
+# An option label from above, or your own words; everything below this line is read as your answer.

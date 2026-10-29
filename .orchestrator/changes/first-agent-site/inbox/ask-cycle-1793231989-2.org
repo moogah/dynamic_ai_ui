@@ -1,0 +1,35 @@
+:PROPERTIES:
+:ID: ask-cycle-1793231989-2
+:KIND: decision
+:STATUS: open
+:RAISED_BY: orchestrator
+:REF: design.org § Open Questions Q2
+:HAPPENED: no
+:BLOCKS: plan
+:END:
+#+TITLE: Should the page spec be json-render's format, or our own small format shaped like it?
+
+* About
+
+The page spec is the JSON description the assistant edits and the page is drawn from. json-render is an existing open-source library that defines such a format and draws it in React; its format and its version changes are decided by its authors. Our own format would be a small one of the same shape, edited by three tools: put components by id, remove a component, set data.
+
+* What happened
+
+Nothing yet; this is a design-round question (Q2 in design.org). The design is drafted on our own format, and the automated tests already script its three tools and its way of pointing a component at data; adopting json-render would rewrite those parts of the design and change the tests with them.
+
+* Options
+
+- Adopt json-render :: Less drawing code to write; the page spec's format, and when it changes, follow the library, and the design and tests are rewritten around it before any building starts.
+- Keep our own format :: A little more code to write; every part of how the page is described and drawn is in this project and visible, which is what the experiment set out to show.
+
+* Recommendation
+
+- Keep our own format :: It matches the intent's aim of visible mechanics, and the earlier experiment (E2) found the small format enough; nothing observed argues for the library.
+
+* If unanswered
+
+Plan drafts nothing; the change waits for this answer.
+
+* Answer
+
+# An option label from above, or your own words; everything below this line is read as your answer.

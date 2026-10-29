@@ -1,0 +1,36 @@
+:PROPERTIES:
+:ID: ask-cycle-1793231989-4
+:KIND: decision
+:STATUS: open
+:RAISED_BY: orchestrator
+:REF: design.org § Open Questions Q4
+:HAPPENED: no
+:BLOCKS: plan
+:END:
+#+TITLE: What should happen when a visitor presses a button or submits a form the assistant put on the page?
+
+* About
+
+The component catalog must include form and button (the intent's R6), so the assistant can put them on the page, but no requirement says what using one does. Without an answer the implementer would decide it.
+
+* What happened
+
+Nothing yet; this is a design-round question (Q4 in design.org). The design is drafted on the first option below, with one automated test for it; the page-spec requirements gain a scenario for whichever option is chosen.
+
+* Options
+
+- It sends a message for the visitor :: Pressing a button sends its label, and submitting a form sends its filled-in fields, to the assistant as if the visitor typed them; the assistant can build small interactive pages ("Show tomorrow", a city picker), and each press starts a turn, so it takes as long as one.
+- It runs a fixed action without the assistant :: The assistant attaches an action such as "fetch again" or "hide this section"; presses are instant and cost nothing, but the page spec gains a list of actions, more to build and close to the scripts the intent rules out.
+- It does nothing :: Forms and buttons are drawn but inert; the visitor always types. Nothing more to build.
+
+* Recommendation
+
+- It sends a message for the visitor :: It reuses the one way into the assistant the page already has, keeps the page spec free of anything like code, and fits R2's "the visitor refines it in conversation"; nothing has been observed yet, so this rests on reasoning.
+
+* If unanswered
+
+Plan drafts nothing; the change waits for this answer.
+
+* Answer
+
+# An option label from above, or your own words; everything below this line is read as your answer.
