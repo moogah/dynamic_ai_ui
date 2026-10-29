@@ -56,7 +56,7 @@ describe("one fetch tool on the owner's server", () => {
 });
 
 describe("only allowlisted hosts", () => {
-  it.fails("refuses a host off the list with an error naming the allowed hosts, and makes no request (Scenario: data-fetch § A host not on the list is refused)", async () => {
+  it("refuses a host off the list with an error naming the allowed hosts, and makes no request (Scenario: data-fetch § A host not on the list is refused)", async () => {
     const hosts = new FakeHosts().on("example.org", () => Response.json({ secret: "internal" }));
     const model = new FakeModel()
       .reply(toolUse("toolu_1", "fetch_url", { url: "https://example.org/data", name: "data" }))
@@ -73,7 +73,7 @@ describe("only allowlisted hosts", () => {
     expect(site.refused).toEqual([]);
   });
 
-  it.fails("does not follow a redirect from an allowlisted host to one off the list (Scenario: data-fetch § A redirect off the list is not followed)", async () => {
+  it("does not follow a redirect from an allowlisted host to one off the list (Scenario: data-fetch § A redirect off the list is not followed)", async () => {
     const hosts = new FakeHosts()
       .on(WEATHER, () => new Response(null, { status: 302, headers: { Location: "https://evil.example/collect" } }))
       .on("evil.example", () => Response.json({ took: "everything" }));
@@ -132,6 +132,9 @@ describe("only allowlisted hosts", () => {
 
       const [result] = model.toolResults(1);
       expect(result.is_error).toBe(true);
+      // Refused for its address, naming what was refused: the connection-time check, not the list.
+      expect(resultText(result)).toMatch(/not a public address/);
+      expect(resultText(result)).toMatch(/localhost|127\.0\.0\.1|::1/);
       expect(hits).toBe(0);
     } finally {
       local.close();
@@ -142,7 +145,7 @@ describe("only allowlisted hosts", () => {
 describe("secrets added by the server", () => {
   // seam/allowlist: the host's secret goes out with the request and comes back nowhere, even
   // from a host that echoes it.
-  it.fails("adds the host's secret to the request and keeps it from the model and the page", async () => {
+  it("adds the host's secret to the request and keeps it from the model and the page", async () => {
     const SECRET = "data-api-secret-5f2a9c";
     const hosts = new FakeHosts().on("api.keyed.example", (request) =>
       Response.json({ temp: 21, echo: { key: request.headers.get("x-api-key") } }),
@@ -169,7 +172,7 @@ describe("secrets added by the server", () => {
 describe("large responses are trimmed", () => {
   const huge = { text: "a".repeat(600_000) };
 
-  it.fails("gives the model a trimmed response that says it was trimmed and how much was left out (Scenario: data-fetch § A trimmed result says so)", async () => {
+  it("gives the model a trimmed response that says it was trimmed and how much was left out (Scenario: data-fetch § A trimmed result says so)", async () => {
     const hosts = new FakeHosts().on(WEATHER, () => Response.json(huge));
     const model = new FakeModel()
       .reply(toolUse("toolu_1", "fetch_url", { url: `https://${WEATHER}/archive`, name: "archive" }))
@@ -191,7 +194,7 @@ describe("large responses are trimmed", () => {
 
   // seam/fetch-result, seam/page-snapshot: the whole response stays in the page spec's data;
   // no request to the model carries it, the next visitor message included.
-  it.fails("never sends the model the whole response, in the tool result or with the next message", async () => {
+  it("never sends the model the whole response, in the tool result or with the next message", async () => {
     const hosts = new FakeHosts().on(WEATHER, () => Response.json(huge));
     const model = new FakeModel()
       .reply(toolUse("toolu_1", "fetch_url", { url: `https://${WEATHER}/archive`, name: "archive" }))

@@ -43,7 +43,7 @@ describe("one loop runs to completion per visitor message", () => {
 });
 
 describe("visible states", () => {
-  it.fails("shows calling the model, then running tools while the fetch runs, then awaiting the visitor (Scenario: agent-loop § The visitor sees progress)", async () => {
+  it("shows calling the model, then running tools while the fetch runs, then awaiting the visitor (Scenario: agent-loop § The visitor sees progress)", async () => {
     const forecast = deferred<Response>();
     const hosts = new FakeHosts().on("api.open-meteo.com", () => forecast.promise);
     const model = new FakeModel();
