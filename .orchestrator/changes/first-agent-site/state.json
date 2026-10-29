@@ -2,7 +2,7 @@
   "schema_version": "1.5",
   "session_id": "orch-1793231989",
   "cycle_id": "cycle-1793231989",
-  "phase": "execute",
+  "phase": "integrate",
   "home": "/home/user/dynamic_ai_ui",
   "code_root": "/home/user/dynamic_ai_ui",
   "change_name": "first-agent-site",
@@ -208,7 +208,142 @@
       "task_class": "infrastructure"
     }
   ],
-  "architect_findings": [],
+  "architect_findings": [
+    {
+      "severity": "high",
+      "class": "invariant-gap",
+      "locations": [
+        {
+          "file": "server/fetchTool.ts",
+          "line": 89
+        },
+        {
+          "file": "server/fetchTool.ts",
+          "line": 96
+        }
+      ],
+      "why_tests_missed": "The echo test redirects to an allowlisted https address and checks the success result; no test checks the error results of a refused redirect.",
+      "discovered_from": "batch-cycle-1793231989",
+      "seam": "seam/allowlist",
+      "evidence": "Probe: keyed host answers 302 to https://<key>.collector.example/x or http://api.keyed.example/<key>/x; fetchForTool and fetchImage both return an error holding the key verbatim (not-on-allowlist and not-https messages are not scrubbed).",
+      "decoration": null,
+      "resolution": "pending",
+      "blocking_merge_until_resolved": false,
+      "trigger": "conformance",
+      "kind": "issue",
+      "title": "A keyed host secret echoed into a refused redirect address is returned in the error",
+      "finding_id": "arch-cycle-1793231989-1",
+      "path": ".orchestrator/changes/first-agent-site/cycles/cycle-1793231989/findings/arch-cycle-1793231989-1.md"
+    },
+    {
+      "severity": "high",
+      "class": "shape-fragmentation",
+      "locations": [
+        {
+          "file": "src/agent/loop.ts",
+          "line": 159
+        },
+        {
+          "file": "src/agent/tools.ts",
+          "line": 66
+        }
+      ],
+      "why_tests_missed": "The stop test checks that every tool call is answered, not which code built the answer; the two constructions agree today.",
+      "discovered_from": "stop-and-undo",
+      "seam": "seam/tool-list",
+      "evidence": "seam/tool-list: the browser builds each tool result in one place (runTool). loop.ts stop() constructs {type: tool_result, tool_use_id, content: STOPPED_RESULT, is_error: true} for unanswered calls; runTool builds the same shape at tools.ts:66.",
+      "decoration": null,
+      "resolution": "pending",
+      "blocking_merge_until_resolved": false,
+      "trigger": "conformance",
+      "kind": "issue",
+      "title": "Stop builds tool_result blocks itself, a second producer beside runTool",
+      "finding_id": "arch-cycle-1793231989-2",
+      "path": ".orchestrator/changes/first-agent-site/cycles/cycle-1793231989/findings/arch-cycle-1793231989-2.md"
+    },
+    {
+      "severity": "low",
+      "class": "invariant-gap",
+      "locations": [
+        {
+          "file": "src/page/catalog.ts",
+          "line": 155
+        },
+        {
+          "file": "src/page/bindings.ts",
+          "line": 8
+        }
+      ],
+      "why_tests_missed": "The only validation test is an unknown type; no test sends a prop the catalog does not define.",
+      "discovered_from": "site-turn",
+      "seam": "seam/catalog",
+      "evidence": "Probe: validateComponent accepts a card with prop constructor, toString, hasOwnProperty or __proto__ (nope is refused). With __proto__: {title: [..]} the resolved props inherit an unvalidated title, drawn as JSON text.",
+      "decoration": null,
+      "resolution": "pending",
+      "blocking_merge_until_resolved": false,
+      "trigger": "conformance",
+      "kind": "issue",
+      "title": "Component validation accepts props named like Object.prototype members",
+      "finding_id": "arch-cycle-1793231989-3",
+      "path": ".orchestrator/changes/first-agent-site/cycles/cycle-1793231989/findings/arch-cycle-1793231989-3.md"
+    },
+    {
+      "severity": "low",
+      "class": "interface-drift",
+      "locations": [
+        {
+          "file": "docs/changes/first-agent-site/design.org",
+          "line": 40
+        },
+        {
+          "file": "src/page/catalog.ts",
+          "line": 33
+        }
+      ],
+      "why_tests_missed": "No test counts the catalog; the button test uses button as a type of its own and no test uses form.",
+      "discovered_from": "site-turn",
+      "seam": "seam/catalog",
+      "evidence": "design.org D9: \"The catalog holds the eleven types ... key-figure tile and form/button.\" src/page/catalog.ts and ComponentType list twelve names, form and button separately (D13 gives them different actions).",
+      "decoration": null,
+      "resolution": "design-amended",
+      "blocking_merge_until_resolved": false,
+      "trigger": "conformance",
+      "kind": "issue",
+      "title": "D9 says the catalog holds eleven types; it holds twelve, form and button apart",
+      "finding_id": "arch-cycle-1793231989-4",
+      "path": ".orchestrator/changes/first-agent-site/cycles/cycle-1793231989/findings/arch-cycle-1793231989-4.md"
+    },
+    {
+      "severity": "low",
+      "class": "interface-drift",
+      "locations": [
+        {
+          "file": "docs/changes/first-agent-site/design.org",
+          "line": 69
+        },
+        {
+          "file": "server/fetchTool.ts",
+          "line": 70
+        },
+        {
+          "file": "server/fetchTool.ts",
+          "line": 126
+        }
+      ],
+      "why_tests_missed": "Owning symbols are not executed; the image route test drives fetchImage through createApp without naming it.",
+      "discovered_from": "chart-and-actions",
+      "seam": "seam/allowlist",
+      "evidence": "Row owning symbols: fetchForTool, createApp. Since chart-and-actions the allowlist, redirect and secret checks are in fetchAllowed, called by fetchForTool and by fetchImage (the image route of D8).",
+      "decoration": null,
+      "resolution": "design-amended",
+      "blocking_merge_until_resolved": false,
+      "trigger": "conformance",
+      "kind": "issue",
+      "title": "seam/allowlist names fetchForTool as owner; the check is fetchAllowed, shared with fetchImage",
+      "finding_id": "arch-cycle-1793231989-5",
+      "path": ".orchestrator/changes/first-agent-site/cycles/cycle-1793231989/findings/arch-cycle-1793231989-5.md"
+    }
+  ],
   "asks_for_user": [
     {
       "id": "ask-cycle-1793231989-1",
@@ -401,6 +536,28 @@
       "model": "opus",
       "effort": "high",
       "recorded_at": "2026-10-29T00:41:06Z"
+    },
+    {
+      "task": null,
+      "cycle": "cycle-1793231989",
+      "source": "role-default",
+      "reason": "role default",
+      "agent_id": "aae1b3f17f071ba25",
+      "role": "phase-integrate",
+      "model": "sonnet",
+      "effort": "high",
+      "recorded_at": "2026-10-29T00:48:47Z"
+    },
+    {
+      "task": null,
+      "cycle": "cycle-1793231989",
+      "source": "role-default",
+      "reason": "role default",
+      "agent_id": "aa04ed07e6bb51e44",
+      "role": "architect-conformance",
+      "model": "opus",
+      "effort": "high",
+      "recorded_at": "2026-10-29T00:48:50Z"
     }
   ],
   "journal": [
@@ -595,6 +752,62 @@
       "ref": "owner-server-entry",
       "text": "owner-server-entry review 1 already fixed in fbce4f8; 2 (malformed escape) and 3 (malformed Host) crash the Node entry, fixed in 6efb765 with a test that drives the real entry and failed before",
       "path": null
+    },
+    {
+      "at": "2026-10-29T00:56:04Z",
+      "kind": "note",
+      "by": "architect",
+      "ref": null,
+      "text": "conformance: suite at HEAD runs 30 tests, 0 failures, 0 skipped (the brief's 23 plus 7 added by the five inline fixes); all 15 cited scenarios pass; no it.fails in test/.",
+      "path": null
+    },
+    {
+      "at": "2026-10-29T00:56:04Z",
+      "kind": "note",
+      "by": "architect",
+      "ref": null,
+      "text": "settlement (hardening: stop leaves the upstream model request running): D6 and seam/stop stand, no amendment (it would drop a promise the code does not keep). Fix needs relay to pass request.signal and server/node.ts toRequest to give the Request a signal aborted on client close.",
+      "path": null
+    },
+    {
+      "at": "2026-10-29T00:56:05Z",
+      "kind": "note",
+      "by": "architect",
+      "ref": null,
+      "text": "thought: src/agent/loop.ts RELAY_PATH and server/app.ts MESSAGES_PATH each define /api/messages, where FETCH_PATH and IMAGE_PATH are shared from one module; the two copies agree today.",
+      "path": null
+    },
+    {
+      "at": "2026-10-29T00:56:05Z",
+      "kind": "note",
+      "by": "architect",
+      "ref": null,
+      "text": "thought: src/page/catalog.ts holds IMAGE_PATH and imageThroughServer, a server route and a renderer helper, beside its stated job as the one definition of component types and props.",
+      "path": null
+    },
+    {
+      "at": "2026-10-29T00:56:05Z",
+      "kind": "note",
+      "by": "architect",
+      "ref": null,
+      "text": "thought: no test asserts seam/allowlist's 'secret only on requests to that host' across two allowlisted hosts (e.g. a keyed host redirecting to a keyless one); fetchAllowed sets the header per hop correctly.",
+      "path": null
+    },
+    {
+      "at": "2026-10-29T00:56:05Z",
+      "kind": "note",
+      "by": "architect",
+      "ref": null,
+      "text": "thought: no test drives a form submission (seam/page-actions, D13), the error state (seam/loop-state), or a prop of the wrong kind or a missing required prop (seam/catalog); each path reads right.",
+      "path": null
+    },
+    {
+      "at": "2026-10-29T00:56:05Z",
+      "kind": "note",
+      "by": "architect",
+      "ref": null,
+      "text": "thought: test/support/site.ts FakeModel answers a request with stream set as an event stream, but the relay never sets stream; that branch is unreachable.",
+      "path": null
     }
   ],
   "cycle_log": {
@@ -602,7 +815,7 @@
     "phase_started_at": {
       "plan": "2026-10-28T23:59:49Z",
       "execute": "2026-10-29T00:15:31Z",
-      "integrate": null
+      "integrate": "2026-10-29T00:47:01Z"
     },
     "history": []
   },
