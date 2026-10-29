@@ -82,7 +82,7 @@ describe("the visitor can stop a turn", () => {
     return { site, model, late };
   }
 
-  it.fails("stops the loop, keeps the card it added, and undo removes it (Scenario: agent-loop § Stopping keeps edits already made)", async () => {
+  it("stops the loop, keeps the card it added, and undo removes it (Scenario: agent-loop § Stopping keeps edits already made)", async () => {
     const { site, late } = await stoppedAfterACard();
 
     expect(site.drawn("c1")).not.toBeNull();
@@ -97,7 +97,7 @@ describe("the visitor can stop a turn", () => {
 
   // seam/stop: the conversation a stopped turn leaves is one the next turn can send, even when
   // the visitor stops it while a tool runs.
-  it.fails("leaves every tool call of a stopped turn answered for the next turn", async () => {
+  it("leaves every tool call of a stopped turn answered for the next turn", async () => {
     const hosts = new FakeHosts().on("api.open-meteo.com", () => new Promise<Response>(() => {}));
     const model = new FakeModel().reply(
       toolUse("toolu_1", "put_components", { components: [card("c1", "Welcome")] }),

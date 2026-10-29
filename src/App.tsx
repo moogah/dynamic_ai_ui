@@ -69,9 +69,12 @@ export function App() {
           <button type="button" onClick={send} disabled={busy}>
             Send
           </button>
-          {/* Undo and Stop act in task stop-and-undo (seam/page-store, seam/stop). */}
-          <button type="button">Undo</button>
-          <button type="button" onClick={() => loop.stop()}>
+          {/* Undo is offered between turns only (seam/page-store, design D5); Stop while one
+              runs (seam/stop, design D6). */}
+          <button type="button" onClick={() => store.undo()} disabled={busy}>
+            Undo
+          </button>
+          <button type="button" onClick={() => loop.stop()} disabled={!busy}>
             Stop
           </button>
         </div>

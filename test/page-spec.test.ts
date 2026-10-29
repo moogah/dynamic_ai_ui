@@ -142,7 +142,7 @@ describe("undo the assistant's last turn", () => {
     return { site, withTable };
   }
 
-  it.fails("puts back the table the last turn removed (Scenario: page-spec § Undo restores the page before the last turn)", async () => {
+  it("puts back the table the last turn removed (Scenario: page-spec § Undo restores the page before the last turn)", async () => {
     const { site, withTable } = await tableRemovedByTheLastTurn(new FakeModel());
 
     site.press("Undo");
@@ -154,7 +154,7 @@ describe("undo the assistant's last turn", () => {
   });
 
   // seam/page-snapshot: the model learns the page undo left from the next visitor message.
-  it.fails("tells the model, with the next visitor message, the page as undo left it", async () => {
+  it("tells the model, with the next visitor message, the page as undo left it", async () => {
     const model = new FakeModel();
     const { site } = await tableRemovedByTheLastTurn(model);
     site.press("Undo");
